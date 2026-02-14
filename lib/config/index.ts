@@ -48,7 +48,110 @@ function createDefaults<T extends Record<string, unknown>>(
  * Production: Empty values for real user input
  */
 export const defaults = {
+  company: createDefaults(
+    // Production defaults (empty values)
+    {
+      name: "",
+      ein: "",
+      address: "",
+      line2: "",
+      city: "",
+      state: "CA", // California-only for now
+      zip: "",
+      payFrequency: "monthly" as const,
+    },
+    // Development overrides (pre-filled values)
+    {
+      name: "Acme",
+      ein: "12-3456789",
+      address: "123 Main St",
+      city: "San Francisco",
+      zip: "94105",
+    }
+  ),
 
+  employee: createDefaults(
+    // Production defaults (empty values)
+    {
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      ssn: "",
+      dateOfBirth: "",
+      email: "",
+      phoneNumber: "",
+      street1: "",
+      street2: "",
+      city: "",
+      state: "CA" as const, // California-only for now
+      zipCode: "",
+      hireDate: "",
+      workingHours: "",
+      employmentType: "W2" as const,
+      payType: "hourly" as const,
+      currentSalary: "",
+      payMethod: "check" as const,
+    },
+    // Development overrides (pre-filled values)
+    {
+      firstName: "John",
+      lastName: "Done",
+      ssn: "123-45-6789",
+      dateOfBirth: "01/01/1990",
+      email: "ex@example.com",
+      street1: "123 Main St",
+      city: "San Francisco",
+      zipCode: "94105",
+      hireDate: "01/01/2024",
+      currentSalary: "16.5",
+    }
+  ),
+
+  // Update personal details form (for editing existing employee)
+  employeePersonal: createDefaults(
+    // Production defaults (empty values - will be populated from employee data)
+    {
+      firstName: "",
+      lastName: "",
+      middleName: "",
+      email: "",
+      phoneNumber: "",
+      dateOfBirth: "",
+      street1: "",
+      street2: "",
+      city: "",
+      state: "CA" as const, // California-only for tax purposes
+      zipCode: "",
+    },
+    // Development overrides (not used - form is populated from employee data)
+    {}
+  ),
+
+  w4: createDefaults(
+    // Production defaults (pre-selected for better UX)
+    {
+      formVersion: "w4_2020_or_later" as const,
+      federalFilingStatus: "single_or_married_separately" as const,
+      multipleJobsOrSpouseWorks: false,
+      claimedDependentsDeduction: "",
+      otherIncome: "",
+      deductions: "",
+      extraWithholding: "",
+      stateFilingStatus: "single_or_married(with_two_or_more_incomes)" as const,
+      regularAllowances: "",
+      estimatedAllowances: "",
+      stateAdditionalWithholding: "",
+      californiaWagesPlanCode: "S" as const,
+      futa: false,
+      fica: false,
+      suiEtt: false,
+      sdi: false,
+    },
+    // Development overrides (additional pre-filled values for faster testing)
+    {
+      regularAllowances: "1",
+    }
+  ),
 } as const
 
 /**

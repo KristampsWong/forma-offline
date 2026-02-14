@@ -124,8 +124,6 @@
   }
 }
 
-
-
 @layer base {
   ::selection {
     background-color: black;     /* clay */
