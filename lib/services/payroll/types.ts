@@ -1,6 +1,5 @@
 import type {
   EmploymentStatus,
-  PayFrequency,
   PayMethod,
   PayType,
 } from "@/lib/constants/employment-constants"

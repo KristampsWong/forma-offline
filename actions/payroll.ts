@@ -1,10 +1,8 @@
 "use server"
 
 import { withAuth } from "@/lib/auth/auth-helpers"
-import {
-  getPayrollTableDataCore,
-  createPayrollRecordCore,
-} from "@/lib/services/payroll.service"
+import { createPayrollRecordCore } from "@/lib/services/payroll/crud"
+import { getPayrollTableDataCore } from "@/lib/services/payroll/queries"
 
 /**
  * Get payroll table data for the payroll page
