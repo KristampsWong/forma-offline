@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect,useState } from "react"
+import { AmountInput } from "@/components/ui/amount-input"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -13,7 +14,7 @@ import {
 import { PayFrequency } from "@/lib/constants/employment-constants"
 import { formatAmount } from "@/lib/utils"
 import type { PayrollTableData } from "@/types/payroll"
-
+import { RoundingToCents } from "@/lib/payroll"
 interface PayrollEmployeeListProps {
   data: PayrollTableData[]
   startDate: string
@@ -37,6 +38,12 @@ export default function PayrollEmployeeList({
       window.location.hash = "#settings/state-rates"
     }
   }, [hasEddAccount])
+  const [hoursMap, setHoursMap] = useState<Record<string, string>>(() =>
+    Object.fromEntries(data.map((e) => [e.id, e.hours ? String(e.hours) : ""]))
+  )
+  const [grossPayMap, setGrossPayMap] = useState<Record<string, number>>(() =>
+    Object.fromEntries(data.map((e) => [e.id, e.grossPay]))
+  )
   return (
     <div className="space-y-4">
       <Table>
@@ -69,10 +76,24 @@ export default function PayrollEmployeeList({
                   {formatAmount(employee.regularPay, "currency")}/hr
                 </TableCell>
                 <TableCell className="font-medium text-start">
-                  {employee.hours}
+                  <AmountInput
+                    prefix=""
+                    suffix="hrs"
+                    value={hoursMap[employee.id] ?? ""}
+                    placeholder="0.00"
+                    className="w-24"
+                    onChange={(value) => {
+                      setHoursMap((prev) => ({ ...prev, [employee.id]: value }))
+                      const newHours = Number(value) || 0
+                      setGrossPayMap((prev) => ({
+                        ...prev,
+                        [employee.id]: RoundingToCents(employee.regularPay * newHours),
+                      }))
+                    }}
+                  />
                 </TableCell>
                 <TableCell className="font-medium text-start tracking-wide">
-                  {formatAmount(employee.grossPay, "currency")}
+                  {formatAmount(grossPayMap[employee.id] ?? employee.grossPay, "currency")}
                 </TableCell>
                 <TableCell className="font-medium text-start capitalize">
                   {employee.status}
