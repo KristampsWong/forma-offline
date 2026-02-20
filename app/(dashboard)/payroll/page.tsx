@@ -44,7 +44,6 @@ export default async function Page({
         startDate={start}
         endDate={end}
         payDate={payDate}
-        periodType={company?.payFrequency ?? "monthly"}
         hasEddAccount={hasEddAccount}
       />
     </section>

@@ -17,7 +17,6 @@ export const EMPLOYMENT_STATUSES = [
 
 // Pay types
 export const PAY_TYPES = [
-  { value: "yearly", label: "Yearly" },
   { value: "hourly", label: "Hourly" },
 ] as const
 

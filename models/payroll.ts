@@ -114,7 +114,7 @@ export interface IEmployerTaxes {
 }
 
 export type PayrollPeriodType = "biweekly" | "monthly"
-export type PayrollPayType = "yearly" | "hourly"
+export type PayrollPayType = "hourly"
 export type PayrollPayMethod = "check" | "cash"
 export type PayrollApprovalStatus = "pending" | "approved"
 
@@ -603,7 +603,7 @@ const PayrollSchema = new mongoose.Schema<PayrollDocument>(
     compensation: {
       payType: {
         type: String,
-        enum: ["yearly", "hourly"],
+        enum: ["hourly"],
         required: true,
       },
       payRate: {
