@@ -1,25 +1,32 @@
 import type {
-  CaliforniaDE4FilingStatus,
   EmploymentStatus,
   EmploymentType,
-  FederalW4FilingStatus,
-  FederalW4FormVersion,
+  PayFrequency,
   PayMethod,
   PayType,
-  WagesPlanCode,
-  WorkState,
-} from "@/models/employee"
-import type { PayFrequency } from "@/models/company"
+} from "@/lib/constants/employment-constants"
+import type {
+  FederalFilingStatus,
+  StateFilingStatus,
+  SupportedState,
+  W4FormVersion,
+} from "@/lib/constants/tax-constants"
 
-// Re-export model types for convenience
+// Re-export constants types for convenience
 export type {
   EmploymentStatus,
   EmploymentType,
+  PayFrequency,
   PayMethod,
   PayType,
-  WagesPlanCode,
-  WorkState,
-} from "@/models/employee"
+} from "@/lib/constants/employment-constants"
+export type {
+  FederalFilingStatus,
+  StateFilingStatus,
+  SupportedState,
+  W4FormVersion,
+  WagePlanCode,
+} from "@/lib/constants/tax-constants"
 
 /**
  * Serialized employee data for list views.
@@ -66,7 +73,7 @@ export interface EmployeeDetail {
   }
 
   // Employment
-  workState: WorkState
+  workState: SupportedState
   hireDate: string
   employmentStatus: EmploymentStatus
   employmentType: EmploymentType
@@ -88,8 +95,8 @@ export interface EmployeeDetail {
 
   // Federal W-4
   currentFederalW4?: {
-    formVersion: FederalW4FormVersion
-    filingStatus: FederalW4FilingStatus
+    formVersion: W4FormVersion
+    filingStatus: FederalFilingStatus
     multipleJobsOrSpouseWorks: boolean
     claimedDependentsDeduction: number
     otherIncome: number
@@ -103,7 +110,7 @@ export interface EmployeeDetail {
   currentStateTax?: {
     state: string
     californiaDE4?: {
-      filingStatus: CaliforniaDE4FilingStatus
+      filingStatus: StateFilingStatus
       worksheetA: number
       worksheetB: number
       additionalWithholding: number
@@ -137,8 +144,8 @@ export interface EmployeeDetail {
     reason?: string
   }>
   federalW4History: Array<{
-    formVersion: FederalW4FormVersion
-    filingStatus: FederalW4FilingStatus
+    formVersion: W4FormVersion
+    filingStatus: FederalFilingStatus
     multipleJobsOrSpouseWorks: boolean
     claimedDependentsDeduction: number
     otherIncome: number
@@ -151,7 +158,7 @@ export interface EmployeeDetail {
   stateTaxHistory: Array<{
     state: string
     californiaDE4?: {
-      filingStatus: CaliforniaDE4FilingStatus
+      filingStatus: StateFilingStatus
       worksheetA: number
       worksheetB: number
       additionalWithholding: number
