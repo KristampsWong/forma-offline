@@ -1,10 +1,12 @@
 import { format, formatDistanceToNowStrict, isValid } from "date-fns"
-import type { PayrollDateParams } from "@/types/payroll"
 
-// Re-export PayrollDateParams for convenience
-export type { PayrollDateParams } from "@/types/payroll"
+type DateOnly = string // MM/DD/YYYY format
 
-export type DateOnly = string // MM/DD/YYYY format
+interface PayrollDateParams {
+  start: Date
+  end: Date
+  payDate: Date
+}
 
 /**
  * Formats user input as a date string with automatic slash insertion
@@ -168,6 +170,22 @@ export function extractDateOnly(date : Date | string | null | undefined) : strin
   const day = String(dateObj.getUTCDate()).padStart(2, "0")
 
   return `${month}/${day}/${year}`
+}
+
+/**
+ * Get year date range (January 1 to December 31) in UTC
+ * @param year - The year
+ * @returns Start and end dates for the year
+ *
+ * @example
+ * getYearDateRange(2026)
+ * // { start: 2026-01-01T00:00:00.000Z, end: 2026-12-31T23:59:59.999Z }
+ */
+export function getYearDateRange(year: number): { start: Date; end: Date } {
+  return {
+    start: new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0)),
+    end: new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999)),
+  }
 }
 
 // ============================================================================

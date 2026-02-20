@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect,useState } from "react"
+import { useEffect, useState } from "react"
 import { AmountInput } from "@/components/ui/amount-input"
 import { Button } from "@/components/ui/button"
 import {
@@ -15,12 +15,14 @@ import { PayFrequency } from "@/lib/constants/employment-constants"
 import { formatAmount } from "@/lib/utils"
 import type { PayrollTableData } from "@/types/payroll"
 import { RoundingToCents } from "@/lib/payroll"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation"
+import { createEmployeePayrollRecord } from "@/actions/payroll"
 interface PayrollEmployeeListProps {
   data: PayrollTableData[]
   startDate: string
   endDate: string
   payDate: string
-  periodType: PayFrequency
   hasEddAccount: boolean
 }
 
@@ -29,7 +31,6 @@ export default function PayrollEmployeeList({
   startDate,
   endDate,
   payDate,
-  periodType,
   hasEddAccount,
 }: PayrollEmployeeListProps) {
   // Check for EDD account on page load
@@ -39,11 +40,12 @@ export default function PayrollEmployeeList({
     }
   }, [hasEddAccount])
   const [hoursMap, setHoursMap] = useState<Record<string, string>>(() =>
-    Object.fromEntries(data.map((e) => [e.id, e.hours ? String(e.hours) : ""]))
+    Object.fromEntries(data.map((e) => [e.id, e.hours ? String(e.hours) : ""])),
   )
   const [grossPayMap, setGrossPayMap] = useState<Record<string, number>>(() =>
-    Object.fromEntries(data.map((e) => [e.id, e.grossPay]))
+    Object.fromEntries(data.map((e) => [e.id, e.grossPay])),
   )
+  const router = useRouter()
   return (
     <div className="space-y-4">
       <Table>
@@ -87,19 +89,47 @@ export default function PayrollEmployeeList({
                       const newHours = Number(value) || 0
                       setGrossPayMap((prev) => ({
                         ...prev,
-                        [employee.id]: RoundingToCents(employee.regularPay * newHours),
+                        [employee.id]: RoundingToCents(
+                          employee.regularPay * newHours,
+                        ),
                       }))
                     }}
                   />
                 </TableCell>
                 <TableCell className="font-medium text-start tracking-wide">
-                  {formatAmount(grossPayMap[employee.id] ?? employee.grossPay, "currency")}
+                  {formatAmount(
+                    grossPayMap[employee.id] ?? employee.grossPay,
+                    "currency",
+                  )}
                 </TableCell>
                 <TableCell className="font-medium text-start capitalize">
                   {employee.status}
                 </TableCell>
                 <TableCell className="text-end">
-                  <Button variant="outline" size="sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!hasEddAccount && employee.status !== "approved"}
+                    onClick={async () => {
+                      if (employee.status === "approved") {
+                        router.push(`/payroll/${employee.payrollRecordId}`)
+                      } else {
+                        const res = await createEmployeePayrollRecord(
+                          employee.id,
+                          startDate,
+                          endDate,
+                          payDate,
+                          parseFloat(hoursMap[employee.id]) || 0,
+                        )
+
+                        if (!res.success) {
+                          toast.error(res.error)
+                          return
+                        }
+                        router.push(`/payroll/${res.data.payrollId}`)
+                      }
+                    }}
+                  >
                     {employee.status === "approved" ? "View" : "Edit"}
                   </Button>
                 </TableCell>

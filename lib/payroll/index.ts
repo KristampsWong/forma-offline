@@ -13,6 +13,8 @@ import type {
   CaliforniaDE4,
   PayrollCalculationInput,
   PayrollEmployeeData,
+  TaxCalculationInput,
+  TaxCalculationResult,
 } from "@/lib/payroll/types"
 import type { PayFrequency, PayType } from "@/lib/constants/employment-constants"
 import type { FederalFilingStatus, StateFilingStatus } from "@/lib/constants/tax-constants"
@@ -488,9 +490,9 @@ export function calculatePayrollForEmployee(
     endDate: new Date(input.endDate),
   })
 
-  // Calculate gross pay
+  // Calculate gross pay (pass raw rate, not regularPay which is already period-divided)
   const grossPay = calculateGrossPay(
-    regularPay,
+    input.currentSalary,
     { type: input.periodType },
     input.payType,
     hours,
@@ -591,6 +593,154 @@ export function getCAAllowanceByFilingStatus(
       return "nonWithholding"
     default:
       return "nonWithholding"
+  }
+}
+
+/**
+ * Core tax calculation logic - Single Source of Truth
+ * This is the central function that performs all tax calculations.
+ * All other functions should call this to ensure consistency.
+ *
+ * IMPORTANT: This is the only place where tax calculation logic should exist.
+ * Any changes to tax calculations must be made here.
+ */
+export function calculatePayrollTaxesCore(
+  input: TaxCalculationInput,
+): TaxCalculationResult {
+  const {
+    grossPay,
+    periodType,
+    ytdGrossPay,
+    federalW4,
+    stateTax,
+    companyRates,
+    taxExemptions,
+    taxRates,
+  } = input
+
+  // Get tax rates - use provided rates or default to current date
+  const rates = taxRates ?? getTaxRates(new Date())
+
+  // ===== Employee Taxes =====
+
+  // Federal income tax withholding
+  const federalTax = federalW4
+    ? federalWithholding(
+        grossPay,
+        periodType,
+        federalW4.filingStatus,
+        federalW4.multipleJobsOrSpouseWorks,
+        federalW4.claimedDependentsDeduction,
+        federalW4.otherIncome,
+        federalW4.deductions,
+        federalW4.extraWithholding,
+        rates,
+      )
+    : 0
+
+  // Social Security tax (check FICA exemption)
+  const socialSecurityTax = taxExemptions?.fica
+    ? 0
+    : calculateSocialSecurity(grossPay, ytdGrossPay, rates)
+
+  // Medicare tax (check FICA exemption)
+  const medicareTax = taxExemptions?.fica
+    ? 0
+    : calculateMedicare(grossPay, rates)
+
+  // Additional Medicare tax (for high earners, check FICA exemption)
+  const additionalMedicareTax = taxExemptions?.fica
+    ? 0
+    : calculateAdditionalMedicare(grossPay, ytdGrossPay, rates)
+
+  // California state income tax
+  const stateIncomeTax =
+    stateTax?.californiaDE4 && !stateTax.californiaDE4.exempt
+      ? californiaWithholding(
+          grossPay,
+          periodType,
+          stateTax.californiaDE4.filingStatus,
+          stateTax.californiaDE4.worksheetA,
+          stateTax.californiaDE4.worksheetB,
+          stateTax.californiaDE4.additionalWithholding,
+          rates,
+        )
+      : 0
+
+  // California State Disability Insurance (SDI)
+  const caStateTaxes = calcCAStateTaxes({
+    wagePlanCode: stateTax?.californiaDE4?.wagesPlanCode,
+    prevYTD: ytdGrossPay,
+    gross: grossPay,
+    UIRate: companyRates.UIRate,
+    ETTRate: companyRates.ETTRate,
+    taxRates: rates,
+  })
+
+  const sdi = taxExemptions?.sdi ? 0 : caStateTaxes.SDI
+
+  // Total employee taxes
+  const employeeTaxesTotal = RoundingToCents(
+    federalTax +
+      socialSecurityTax +
+      medicareTax +
+      additionalMedicareTax +
+      stateIncomeTax +
+      sdi,
+  )
+
+  // ===== Employer Taxes =====
+
+  // Employer matching Social Security (check FICA exemption)
+  const employerSocialSecurity = taxExemptions?.fica
+    ? 0
+    : calculateSocialSecurity(grossPay, ytdGrossPay, rates)
+
+  // Employer matching Medicare (check FICA exemption)
+  const employerMedicare = taxExemptions?.fica
+    ? 0
+    : calculateMedicare(grossPay, rates)
+
+  // Federal Unemployment Tax (FUTA)
+  const employerFUTA = taxExemptions?.futa
+    ? 0
+    : calcFUTA(ytdGrossPay, grossPay, rates)
+
+  // California State Unemployment Insurance (SUI) and Employment Training Tax (ETT)
+  const employerSUI = taxExemptions?.suiEtt ? 0 : caStateTaxes.UI
+  const employerETT = taxExemptions?.suiEtt ? 0 : caStateTaxes.ETT
+
+  // Total employer taxes
+  const employerTaxesTotal = RoundingToCents(
+    employerSocialSecurity +
+      employerMedicare +
+      employerFUTA +
+      employerSUI +
+      employerETT,
+  )
+
+  // Net pay
+  const netPay = RoundingToCents(grossPay - employeeTaxesTotal)
+
+  return {
+    employeeTaxes: {
+      federalIncomeTax: federalTax,
+      socialSecurityTax: socialSecurityTax,
+      medicareTax: medicareTax + additionalMedicareTax,
+      stateIncomeTax: stateIncomeTax,
+      localTax: 0, // No local tax in California
+      sdi: sdi,
+      total: employeeTaxesTotal,
+    },
+    employerTaxes: {
+      socialSecurityTax: employerSocialSecurity,
+      medicareTax: employerMedicare,
+      futa: employerFUTA,
+      sui: employerSUI,
+      ett: employerETT,
+      total: employerTaxesTotal,
+    },
+    netPay,
   }
 }
 
