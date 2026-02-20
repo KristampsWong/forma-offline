@@ -1,14 +1,27 @@
+/**
+ * Single-record CRUD operations — 3 functions:
+ *  1. createPayrollRecordCore    ✅ implemented
+ *  2. getPayrollRecordByIdCore   (planned)
+ *  3. updatePayrollRecordCore    (planned)
+ */
 import dbConnect from "@/lib/db/dbConnect"
 import Company from "@/models/company"
 import Employee from "@/models/employee"
 import Payroll from "@/models/payroll"
-import { parseDateParam } from "@/lib/date/utils"
+import { formatDateParam, parseDateParam } from "@/lib/date/utils"
 import {
   calculateHours,
   calculateGrossPay,
   calculatePayrollTaxesCore,
 } from "@/lib/payroll"
+import { getTaxRates } from "@/lib/constants/tax-rates"
 import { getPayrollYTDCore } from "@/lib/services/payroll/reporting"
+import type { PayFrequency } from "@/lib/constants/employment-constants"
+import type { TaxCalculationInput } from "@/lib/payroll/types"
+import type { IPayroll } from "@/models/payroll"
+import type { IEmployeeAddress } from "@/models/employee"
+import type { LeanDoc } from "@/types/db"
+import type { PayrollRecord } from "@/types/payroll"
 
 export async function createPayrollRecordCore(
   userId: string,
@@ -210,4 +223,164 @@ export async function createPayrollRecordCore(
     payrollId: payrollRecord._id.toString(),
     employeeId: employee._id.toString(),
   }
+}
+
+
+/**
+ * Get payroll record by ID core logic
+ */
+export async function getPayrollRecordByIdCore(
+  userId: string,
+  payrollId: string
+): Promise<PayrollRecord & { paySchedule: PayFrequency }> {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId }).select(
+    "currentStateRate.UIRate currentStateRate.ETTRate payFrequency"
+  )
+  if (!company) {
+    throw new Error("Company not found.")
+  }
+
+  const payrollRecord = await Payroll.findById(payrollId)
+    .select("-employeeInfo.ssn -employeeInfo.email -approvalInfo")
+    .lean<LeanDoc<IPayroll>>()
+
+  if (!payrollRecord) {
+    throw new Error("Payroll record not found.")
+  }
+
+  if (company._id.toString() !== payrollRecord.companyId.toString()) {
+    throw new Error("Access denied to this payroll record.")
+  }
+
+  const employee = (await Employee.findById(payrollRecord.employeeId)
+    .select("address")
+    .lean()) as { address: IEmployeeAddress } | null
+
+  const defaultAddress: IEmployeeAddress = {
+    street1: "",
+    city: "",
+    state: "",
+    zipCode: "",
+  }
+
+  const serialized = JSON.parse(JSON.stringify(payrollRecord))
+
+  return {
+    ...serialized,
+    address: employee?.address || defaultAddress,
+    companyRates: {
+      uiRate: company.currentStateRate?.UIRate || 0.034,
+      ettRate: company.currentStateRate?.ETTRate || 0.001,
+    },
+    paySchedule: company.payFrequency,
+  } as PayrollRecord & { paySchedule: PayFrequency }
+}
+
+
+
+
+/**
+ * Update payroll record with server-side tax validation.
+ * Fetches YTD internally and recalculates taxes to prevent tampering.
+ */
+export async function updatePayrollRecordCore(
+  userId: string,
+  payrollId: string,
+  updateData: {
+    hoursWorked: {
+      regularHours: number
+      overtimeHours: number
+      totalHours: number
+    }
+    earnings: PayrollRecord["earnings"]
+    deductions: {
+      taxes: PayrollRecord["deductions"]["taxes"]
+    }
+    employerTaxes: PayrollRecord["employerTaxes"]
+    netPay: number
+  }
+): Promise<void> {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId })
+  if (!company) {
+    throw new Error("Company not found.")
+  }
+
+  if (!company.currentStateRate) {
+    throw new Error("Company is missing state tax rates.")
+  }
+
+  const payrollRecord = await Payroll.findOne({
+    _id: payrollId,
+    companyId: company._id,
+  })
+  if (!payrollRecord) {
+    throw new Error("Payroll record not found.")
+  }
+
+  if (payrollRecord.approvalStatus === "approved") {
+    throw new Error("Cannot modify an approved payroll record.")
+  }
+
+  // Fetch YTD for accurate tax recalculation
+  const startDateParam = formatDateParam(payrollRecord.payPeriod.startDate)
+  const ytdResult = await getPayrollYTDCore(
+    userId,
+    payrollRecord.employeeId.toString(),
+    startDateParam,
+  )
+
+  // Server-side tax recalculation
+  // Snapshot types lack submittedDate (metadata-only), safe to cast
+  const serverCalculated = calculatePayrollTaxesCore({
+    grossPay: updateData.earnings.totalGrossPay,
+    periodType: payrollRecord.payPeriod.periodType as PayFrequency,
+    ytdGrossPay: ytdResult.salary.totalGrossPay,
+    federalW4: payrollRecord.federalW4 as TaxCalculationInput["federalW4"],
+    stateTax: (payrollRecord.californiaDE4
+      ? {
+          state: "CA" as const,
+          californiaDE4: payrollRecord.californiaDE4,
+          effectiveDate: payrollRecord.californiaDE4.effectiveDate,
+        }
+      : undefined) as TaxCalculationInput["stateTax"],
+    companyRates: company.currentStateRate,
+    taxExemptions: payrollRecord.taxExemptions,
+    taxRates: getTaxRates(payrollRecord.payPeriod.startDate),
+  })
+
+  // Validate frontend-submitted taxes against server calculation
+  const tolerance = 0.01
+  const employeeTaxDiff = Math.abs(
+    updateData.deductions.taxes.total - serverCalculated.employeeTaxes.total
+  )
+  const employerTaxDiff = Math.abs(
+    updateData.employerTaxes.total - serverCalculated.employerTaxes.total
+  )
+  const netPayDiff = Math.abs(updateData.netPay - serverCalculated.netPay)
+
+  if (
+    employeeTaxDiff > tolerance ||
+    employerTaxDiff > tolerance ||
+    netPayDiff > tolerance
+  ) {
+    throw new Error(
+      "Tax calculation mismatch. Please refresh the page and try again."
+    )
+  }
+
+  // Update with server-calculated tax values (ignore client-submitted taxes)
+  await Payroll.findByIdAndUpdate(payrollId, {
+    "hoursWorked.regularHours": updateData.hoursWorked.regularHours,
+    "hoursWorked.overtimeHours": updateData.hoursWorked.overtimeHours,
+    "hoursWorked.totalHours": updateData.hoursWorked.totalHours,
+    earnings: updateData.earnings,
+    "deductions.taxes": serverCalculated.employeeTaxes,
+    employerTaxes: serverCalculated.employerTaxes,
+    netPay: serverCalculated.netPay,
+    updatedAt: new Date(),
+  })
 }

@@ -1,3 +1,10 @@
+/**
+ * Aggregations and YTD summaries — 4 functions:
+ *  1. getPayrollYTDCore                ✅ implemented
+ *  2. getRecentPayrollActivitiesCore   (planned)
+ *  3. getYearlyPayrollSummariesCore    (planned)
+ *  4. getYTDNetPayCore                 (planned)
+ */
 import dbConnect from "@/lib/db/dbConnect"
 import { parseDateParam, getYearDateRange } from "@/lib/date/utils"
 import Company from "@/models/company"

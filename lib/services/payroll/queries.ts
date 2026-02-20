@@ -1,3 +1,11 @@
+/**
+ * Read operations (company + employee scoped) — 5 functions:
+ *  1. getPayrollTableDataCore        ✅ implemented
+ *  2. getCompanyPayrollRecordsCore   (planned)
+ *  3. getPreviewPayrollCore          (planned)
+ *  4. getEmployeePayrollsCore        (planned)
+ *  5. getEmployeePayrollDetailsCore  (planned)
+ */
 import dbConnect from "@/lib/db/dbConnect"
 import type { PayFrequency } from "@/lib/constants/employment-constants"
 import Company from "@/models/company"
