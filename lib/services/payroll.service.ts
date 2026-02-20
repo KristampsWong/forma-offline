@@ -269,12 +269,7 @@ export async function createPayrollRecordCore(
           endDate: endDateObj,
         })
 
-  const grossPay = calculateGrossPay(
-    salary,
-    { type: payFrequency },
-    payType,
-    totalHours,
-  )
+  const grossPay = calculateGrossPay(salary, totalHours)
 
   // 7. Calculate YTD and taxes
   const ytdResult = await getPayrollYTDCore(userId, employeeId, startDate)

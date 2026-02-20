@@ -16,7 +16,7 @@ import type {
   TaxCalculationInput,
   TaxCalculationResult,
 } from "@/lib/payroll/types"
-import type { PayFrequency, PayType } from "@/lib/constants/employment-constants"
+import type { PayFrequency } from "@/lib/constants/employment-constants"
 import type { FederalFilingStatus, StateFilingStatus } from "@/lib/constants/tax-constants"
 
 // Re-export for convenience
@@ -50,34 +50,16 @@ export function calculateHours(
 
 export function calculateGrossPay(
   payRate: number,
-  payPeriod: { type: PayFrequency | "weekly" | "biweekly" },
-  payType: PayType,
   hours: number,
 ) {
-  if (payType === "hourly") {
-    return payRate * hours
-  }
-  if (payType === "yearly") {
-    if (payPeriod.type === "monthly") return (payRate / 12) * hours
-    if (payPeriod.type === "biweekly") return (payRate / 26) * hours
-    if (payPeriod.type === "weekly") return (payRate / 52) * hours
-  }
-  return 0
+  return payRate * hours
 }
 
 /**
- * Calculate hourly rate from salary or hourly pay
- * For salary employees: annual salary / 52 weeks / 40 hours
- * For hourly employees: returns the hourly rate as-is
+ * Calculate hourly rate from pay rate
  */
-export function calculateHourlyRate(
-  salary: number,
-  payType: PayType,
-): number {
-  if (payType === "hourly") {
-    return salary
-  }
-  return salary / 52 / 40
+export function calculateHourlyRate(salary: number): number {
+  return salary
 }
 
 /**
@@ -451,20 +433,10 @@ export function calcCAStateTaxes({
 }
 
 /**
- * Calculate regular pay for an employee based on their pay type
+ * Calculate regular pay for an employee (hourly rate)
  */
-function calculateRegularPay(
-  currentSalary: number,
-  payType: PayType,
-  periodType: PayFrequency,
-): number {
-  if (payType === "hourly") {
-    return currentSalary // For hourly, currentSalary is the hourly rate
-  }
-
-  // For salary, divide by pay periods per year
-  const periodsPerYear = periodType === "monthly" ? 12 : 26 // biweekly = 26
-  return currentSalary / periodsPerYear
+function calculateRegularPay(currentSalary: number): number {
+  return currentSalary
 }
 
 /**
@@ -476,12 +448,8 @@ export function calculatePayrollForEmployee(
 ): PayrollEmployeeData {
   const weeklyHours = input.weeklyHours ?? 0
 
-  // Calculate regular pay
-  const regularPay = calculateRegularPay(
-    input.currentSalary,
-    input.payType,
-    input.periodType,
-  )
+  // Calculate regular pay (hourly rate)
+  const regularPay = calculateRegularPay(input.currentSalary)
 
   // Calculate hours
   const hours = calculateHours(weeklyHours, {
@@ -490,13 +458,8 @@ export function calculatePayrollForEmployee(
     endDate: new Date(input.endDate),
   })
 
-  // Calculate gross pay (pass raw rate, not regularPay which is already period-divided)
-  const grossPay = calculateGrossPay(
-    input.currentSalary,
-    { type: input.periodType },
-    input.payType,
-    hours,
-  )
+  // Calculate gross pay
+  const grossPay = calculateGrossPay(regularPay, hours)
 
   return {
     id: input.employeeId,
