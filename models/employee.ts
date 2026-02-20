@@ -279,7 +279,7 @@ const CompensationSchema = new mongoose.Schema<ICompensation>({
   },
   payType: {
     type: String,
-    enum: ["yearly", "hourly"],
+    enum: ["hourly"],
     required: true,
   },
   workingHours: {
@@ -437,9 +437,9 @@ const EmployeeSchema = new mongoose.Schema<EmployeeDocument>(
       },
       payType: {
         type: String,
-        enum: ["yearly", "hourly"],
+        enum: ["hourly"],
         required: true,
-        default: "yearly",
+        default: "hourly",
       },
       workingHours: {
         type: Number,
