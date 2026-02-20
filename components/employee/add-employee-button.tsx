@@ -27,7 +27,7 @@ import {
   FormSelect,
 } from "@/components/ui/form-field"
 import { Input } from "@/components/ui/input"
-import {defaults} from "@/lib/config"
+import { defaults } from "@/lib/config"
 import {
   EMPLOYMENT_TYPES,
   PAY_METHODS,

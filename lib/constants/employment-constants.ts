@@ -17,7 +17,6 @@ export const EMPLOYMENT_STATUSES = [
 
 // Pay types
 export const PAY_TYPES = [
-  { value: "yearly", label: "Yearly" },
   { value: "hourly", label: "Hourly" },
 ] as const
 
@@ -32,9 +31,18 @@ export const PAY_METHODS = [
   { value: "cash", label: "Cash" },
 ] as const
 
+// Company types
+export const COMPANY_TYPES = [
+  { value: "llc", label: "LLC" },
+  { value: "corporation", label: "Corporation" },
+  { value: "partnership", label: "Partnership" },
+  { value: "sole_proprietorship", label: "Sole Proprietorship" },
+] as const
+
 // Type exports
 export type EmploymentType = (typeof EMPLOYMENT_TYPES)[number]["value"]
 export type EmploymentStatus = (typeof EMPLOYMENT_STATUSES)[number]["value"]
 export type PayType = (typeof PAY_TYPES)[number]["value"]
 export type PayFrequency = (typeof PAY_FREQUENCIES)[number]["value"]
 export type PayMethod = (typeof PAY_METHODS)[number]["value"]
+export type CompanyType = (typeof COMPANY_TYPES)[number]["value"]

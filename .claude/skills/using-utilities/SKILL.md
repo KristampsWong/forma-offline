@@ -41,25 +41,7 @@ if (isDevelopment()) {
 
 ### Logger (lib/logger.ts)
 
-| Method | Shown in Dev | Shown in Prod |
-|--------|--------------|---------------|
-| `logger.debug()` | Yes | No |
-| `logger.info()` | Yes | No |
-| `logger.warn()` | Yes | No |
-| `logger.error()` | Yes | Yes |
-| `logger.request()` | Yes (if enabled) | No |
-
-```tsx
-import { logger, createModuleLogger } from "@/lib/logger"
-
-// Direct usage
-logger.debug("Processing user:", userId)
-logger.error("Failed to save:", error)
-
-// Module-scoped logger (adds [ModuleName] prefix)
-const log = createModuleLogger("AuthService")
-log.info("User logged in")  // Output: [INFO] [AuthService] User logged in
-```
+See the dedicated `using-logger` skill for full details. Key rule: never use `console.log/warn/error` directly — always use `logger` from `@/lib/logger`.
 
 ### Config (lib/config/index.ts)
 

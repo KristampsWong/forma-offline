@@ -16,7 +16,8 @@ export default async function Layout({
     redirect("/sign-in")
   }
 
-  const companyData = await getCompany()
+  const result = await getCompany()
+  const companyData = result.success ? result.data : null
 
   return (
     <div id="dashboard-root" className="flex min-h-screen w-full">

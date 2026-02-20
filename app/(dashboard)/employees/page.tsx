@@ -1,8 +1,8 @@
-
 import { UserRound } from "lucide-react"
 import { redirect } from "next/navigation"
 
 import { getAllEmployees } from "@/actions/employee"
+import { formatAmount } from "@/lib/utils"
 import Avatar from "@/components/avatar"
 import { AddEmployeeButton } from "@/components/employee/add-employee-button"
 import Header from "@/components/header"
@@ -16,7 +16,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 export default async function Page() {
-
   const result = await getAllEmployees()
   const employees = result.success && result.employees ? result.employees : []
   return (
@@ -62,18 +61,8 @@ export default async function Page() {
                 // Format pay rate based on pay type
                 const payRateDisplay =
                   employee.currentCompensation.payType === "hourly"
-                    ? `$${employee.currentCompensation.salary.toFixed(2)}/hr`
-                    : `$${employee.currentCompensation.salary.toLocaleString()}/yr`
-
-                // Format pay method
-                const payMethodDisplay =
-                  employee.currentPayMethod.payMethod === "check" ? "Check" : "Cash"
-
-                // Format status
-                const statusDisplay =
-                  employee.employmentStatus === "active"
-                    ? "Active"
-                    : "Terminated"
+                    ? `${formatAmount(employee.currentCompensation.salary, "currency")}/hr`
+                    : `${formatAmount(employee.currentCompensation.salary, "currency")}/yr`
 
                 return (
                   <TableRow
@@ -93,11 +82,11 @@ export default async function Page() {
                     <TableCell className="font-medium text-start">
                       {payRateDisplay}
                     </TableCell>
-                    <TableCell className="font-medium text-start">
-                      {payMethodDisplay}
+                    <TableCell className="font-medium text-start capitalize">
+                      {employee.currentPayMethod.payMethod}
                     </TableCell>
-                    <TableCell className="font-medium text-end">
-                      {statusDisplay}
+                    <TableCell className="font-medium text-end capitalize">
+                      {employee.employmentStatus}
                     </TableCell>
                   </TableRow>
                 )

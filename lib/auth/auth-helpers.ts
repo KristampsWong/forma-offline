@@ -2,6 +2,7 @@ import { headers } from "next/headers"
 import { cache } from "react"
 
 import { auth } from "@/lib/auth/auth"
+import { logger } from "@/lib/logger"
 
 export interface BetterAuthUser {
   id: string
@@ -65,4 +66,35 @@ export async function requireAuth(): Promise<AuthResponse> {
   }
 
   return currentUser
+}
+
+type ActionSuccess<T> = { success: true; data: T }
+type ActionError = { success: false; error: string }
+type ActionResult<T> = ActionSuccess<T> | ActionError
+
+/**
+ * Reusable auth wrapper for server actions.
+ * Handles auth check, passes userId to service fn, and standardizes error responses.
+ */
+export async function withAuth<T>(
+  fn: (userId: string) => Promise<T>
+): Promise<ActionResult<T>> {
+  const { user } = await requireAuth()
+
+  try {
+    const data = await fn(user.id)
+    return { success: true, data }
+  } catch (error) {
+    logger.error(
+      "Action error",
+      error instanceof Error ? error.message : error,
+    )
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred.",
+    }
+  }
 }

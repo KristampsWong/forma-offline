@@ -1,9 +1,8 @@
 import mongoose, { Document, Model } from "mongoose"
 
-// --- Types ---
+import type { CompanyType, PayFrequency } from "@/lib/constants/employment-constants"
 
-export type PayFrequency = "monthly"
-export type CompanyType = "llc" | "corporation" | "partnership" | "sole_proprietorship"
+// --- Types ---
 
 export interface IPayFrequencyHistory {
   payFrequency: PayFrequency

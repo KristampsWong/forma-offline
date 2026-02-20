@@ -34,7 +34,7 @@ export const employeeStep1Schema = z.object({
   employmentType: z.enum(["W2"]),
 
   // Compensation
-  payType: z.enum(["yearly", "hourly"]),
+  payType: z.enum(["hourly"]),
   currentSalary: z.string().min(1, "Required"),
   payMethod: z.enum(["check", "cash"]),
 })
@@ -219,7 +219,7 @@ export const updateBasePaySchema = z.object({
       (val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0,
       "Must be a positive number"
     ),
-  payType: z.enum(["hourly", "yearly"], {
+  payType: z.enum(["hourly"], {
     message: "Pay type is required",
   }),
   workingHours: z

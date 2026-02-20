@@ -8,6 +8,19 @@ import {
   maskSSN,
 } from "@/lib/encryption/ssn"
 import { logger } from "@/lib/logger"
+import type {
+  EmploymentStatus,
+  EmploymentType,
+  PayMethod,
+  PayType,
+} from "@/lib/constants/employment-constants"
+import type {
+  FederalFilingStatus,
+  StateFilingStatus,
+  SupportedState,
+  W4FormVersion,
+  WagePlanCode,
+} from "@/lib/constants/tax-constants"
 
 /**
  * Employee Model
@@ -29,37 +42,21 @@ import { logger } from "@/lib/logger"
 
 // --- Types ---
 
-export type CaliforniaDE4FilingStatus =
-  | "single_or_married(with_two_or_more_incomes)"
-  | "married(one_income)"
-  | "head_of_household"
-  | "do_not_withhold"
-
-export type WagesPlanCode = "A" | "S" | "J" | "P"
-
 export interface ICaliforniaDE4 {
-  filingStatus: CaliforniaDE4FilingStatus
+  filingStatus: StateFilingStatus
   worksheetA: number
   worksheetB: number
   additionalWithholding: number
   exempt: boolean
-  wagesPlanCode?: WagesPlanCode
+  wagesPlanCode?: WagePlanCode
   effectiveDate: Date
   endDate?: Date
   submittedDate: Date
 }
 
-export type FederalW4FormVersion = "w4_2020_or_later" | "w4_2019_or_earlier"
-
-export type FederalW4FilingStatus =
-  | "single_or_married_separately"
-  | "married_jointly_or_qualifying_surviving"
-  | "head_of_household"
-  | "exempt"
-
 export interface IFederalW4 {
-  formVersion: FederalW4FormVersion
-  filingStatus: FederalW4FilingStatus
+  formVersion: W4FormVersion
+  filingStatus: FederalFilingStatus
   multipleJobsOrSpouseWorks: boolean
   claimedDependentsDeduction: number
   otherIncome: number
@@ -71,21 +68,13 @@ export interface IFederalW4 {
   reason?: string
 }
 
-export type StateTaxState = "CA"
-
 export interface IStateTaxWithholding {
-  state: StateTaxState
+  state: SupportedState
   californiaDE4?: ICaliforniaDE4
   effectiveDate: Date
   endDate?: Date
   reason?: string
 }
-
-export type PayType = "yearly" | "hourly"
-export type PayMethod = "check" | "cash"
-export type EmploymentStatus = "active" | "terminated"
-export type EmploymentType = "W2" | "1099"
-export type WorkState = "CA"
 
 export interface ICompensation {
   salary: number
@@ -129,7 +118,7 @@ export interface IEmployee {
   email: string
   phoneNumber?: string
   address: IEmployeeAddress
-  workState: WorkState
+  workState: SupportedState
   hireDate: Date
   terminationDate?: Date
   employmentStatus: EmploymentStatus
@@ -290,7 +279,7 @@ const CompensationSchema = new mongoose.Schema<ICompensation>({
   },
   payType: {
     type: String,
-    enum: ["yearly", "hourly"],
+    enum: ["hourly"],
     required: true,
   },
   workingHours: {
@@ -448,9 +437,9 @@ const EmployeeSchema = new mongoose.Schema<EmployeeDocument>(
       },
       payType: {
         type: String,
-        enum: ["yearly", "hourly"],
+        enum: ["hourly"],
         required: true,
-        default: "yearly",
+        default: "hourly",
       },
       workingHours: {
         type: Number,
