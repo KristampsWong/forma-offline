@@ -7,6 +7,7 @@ import Payroll from "@/models/payroll"
 import { parseDateParam } from "@/lib/date/utils"
 
 import { calculatePayrollForEmployee } from "@/lib/payroll"
+import type { PayrollTableData } from "@/types/payroll"
 
 interface EmployeeStub {
   _id: string
@@ -20,17 +21,6 @@ interface EmployeeStub {
   hireDate: Date
   terminationDate?: Date
   compensationHistory: ICompensation[]
-}
-
-export interface PayrollTableData {
-  id: string
-  payrollRecordId?: string
-  name: string
-  regularPay: number
-  hours: number
-  grossPay: number
-  payType: string
-  status: string
 }
 
 interface PayrollRecordFromDB {
@@ -50,14 +40,15 @@ export async function getPayrollTableDataCore(
   userId: string,
   startDate: string,
   endDate: string,
-  payType: PayFrequency
 ): Promise<PayrollTableData[]> {
   await dbConnect()
 
-  const company = await Company.findOne({ userId }).select("_id")
+  const company = await Company.findOne({ userId }).select("_id payFrequency")
   if (!company) {
     throw new Error("Company not found.")
   }
+
+  const payType: PayFrequency = company.payFrequency
 
   const startDateParsed = parseDateParam(startDate)
   const endDateParsed = parseDateParam(endDate)

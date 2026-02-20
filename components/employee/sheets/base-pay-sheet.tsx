@@ -7,9 +7,10 @@ import { useForm, useWatch } from "react-hook-form"
 import { updateEmployeeCompensation } from "@/actions/employee"
 import { EditSheetForm } from "@/components/ui/edit-sheet-form"
 import { FormField, FormSelect } from "@/components/ui/form-field"
+import type { PayMethod, PayType } from "@/lib/constants/employment-constants"
 import { PAY_METHODS, PAY_TYPES } from "@/lib/constants/employment-constants"
 import { type UpdateBasePayForm, updateBasePaySchema } from "@/lib/validation"
-import type { EmployeeDetail, PayMethod, PayType } from "@/types/employee"
+import type { EmployeeDetail } from "@/types/employee"
 
 interface BasePaySheetProps {
   employee: EmployeeDetail

@@ -11,6 +11,6 @@ export async function getPayrollTableData(
   endDate: string,
 ) {
   return withAuth((userId) =>
-    getPayrollTableDataCore(userId, startDate, endDate, "monthly")
+    getPayrollTableDataCore(userId, startDate, endDate)
   )
 }

@@ -1,9 +1,10 @@
 "use server"
 
-import { requireAuth } from "@/lib/auth/auth-helpers"
+import { requireAuth, withAuth } from "@/lib/auth/auth-helpers"
 import { COMPANY_ERRORS, STATE_RATE_ERRORS } from "@/lib/constants/errors"
 import dbConnect from "@/lib/db/dbConnect"
 import { logger } from "@/lib/logger"
+import { getCompanyCore } from "@/lib/services/company.service"
 import {
   createCompanyInputSchema,
   type StateRateFormValues,
@@ -11,8 +12,7 @@ import {
   updateCompanySchema,
   stateRateSchema,
 } from "@/lib/validation/company-schema"
-import Company, { type ICompany } from "@/models/company"
-import type { LeanDoc } from "@/types/db"
+import Company from "@/models/company"
 
 export async function checkNeedsOnboarding(): Promise<string | null> {
   const { user } = await requireAuth()
@@ -77,19 +77,7 @@ export async function createCompany(
 
 
 export async function getCompany() {
-  const { user } = await requireAuth()
-
-  await dbConnect()
-
-  const company = await Company.findOne({ userId: user.id }).lean<
-    LeanDoc<ICompany>
-  >()
-
-  if (!company) return null
-
-  // Serialize to plain object for client components
-  // (strips ObjectId/Date wrappers that can't cross the server→client boundary)
-  return JSON.parse(JSON.stringify(company)) as LeanDoc<ICompany>
+  return withAuth((userId) => getCompanyCore(userId))
 }
 
 export async function updateCompany(

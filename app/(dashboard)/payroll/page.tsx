@@ -5,6 +5,9 @@ import { endOfMonth, startOfMonth } from "date-fns"
 import { redirect } from "next/navigation"
 import PayrollEmployeeList from "@/components/payroll/payroll-employee-list"
 import { AddEmployeeButton } from "@/components/employee/add-employee-button"
+import { getPayrollTableData } from "@/actions/payroll"
+import { getCompany } from "@/actions/company"
+
 export default async function Page({
   searchParams,
 }: {
@@ -20,6 +23,15 @@ export default async function Page({
     redirect(`/payroll?start=${s}&end=${e}&payDate=${p}`)
   }
 
+  const [payrollResult, companyResult] = await Promise.all([
+    getPayrollTableData(start, end),
+    getCompany(),
+  ])
+
+  const tableData = payrollResult.success ? payrollResult.data : []
+  const company = companyResult.success ? companyResult.data : null
+  const hasEddAccount = Boolean(company?.currentStateRate?.eddAccountNumber)
+
   return (
     <section className="p-4 max-w-7xl mx-auto space-y-8 w-full">
       <Header title="Payroll" />
@@ -28,14 +40,12 @@ export default async function Page({
         <AddEmployeeButton variant="link" />
       </div>
       <PayrollEmployeeList
-        // data={tableData}
-        // startDate={start}
-        // endDate={end}
-        // payDate={payDate || end}
-        // periodType={paySchedule}
-        // hasEddAccount={Boolean(
-        //   companyProfile?.currentStateRate?.ettAccountNumber,
-        // )}
+        data={tableData}
+        startDate={start}
+        endDate={end}
+        payDate={payDate}
+        periodType={company?.payFrequency ?? "monthly"}
+        hasEddAccount={hasEddAccount}
       />
     </section>
   )

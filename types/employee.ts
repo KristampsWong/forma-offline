@@ -12,21 +12,13 @@ import type {
   W4FormVersion,
 } from "@/lib/constants/tax-constants"
 
-// Re-export constants types for convenience
-export type {
-  EmploymentStatus,
-  EmploymentType,
-  PayFrequency,
-  PayMethod,
-  PayType,
-} from "@/lib/constants/employment-constants"
-export type {
-  FederalFilingStatus,
-  StateFilingStatus,
-  SupportedState,
-  W4FormVersion,
-  WagePlanCode,
-} from "@/lib/constants/tax-constants"
+/**
+ * Serialized employee interfaces for client components.
+ *
+ * Primitive union types (PayType, PayMethod, etc.) live in @/lib/constants/.
+ * This file defines the complex object shapes that server actions return
+ * and client components consume (dates as ISO strings, ObjectIds as strings).
+ */
 
 /**
  * Serialized employee data for list views.

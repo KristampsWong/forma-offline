@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -9,22 +10,33 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { PayFrequency } from "@/lib/constants/employment-constants"
 import { formatAmount } from "@/lib/utils"
+import type { PayrollTableData } from "@/types/payroll"
 
-interface PayrollEmployee {
-  id: string
-  name: string
-  regularPay: number
-  hours: number
-  grossPay: number
-  status: string
+interface PayrollEmployeeListProps {
+  data: PayrollTableData[]
+  startDate: string
+  endDate: string
+  payDate: string
+  periodType: PayFrequency
+  hasEddAccount: boolean
 }
 
 export default function PayrollEmployeeList({
   data = [],
-}: {
-  data?: PayrollEmployee[]
-}) {
+  startDate,
+  endDate,
+  payDate,
+  periodType,
+  hasEddAccount,
+}: PayrollEmployeeListProps) {
+  // Check for EDD account on page load
+  useEffect(() => {
+    if (!hasEddAccount) {
+      window.location.hash = "#settings/state-rates"
+    }
+  }, [hasEddAccount])
   return (
     <div className="space-y-4">
       <Table>
