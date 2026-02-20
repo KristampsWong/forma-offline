@@ -52,14 +52,11 @@ export default function PayrollForm({
     payrollRecord.earnings.totalGrossPay,
   )
 
-  const [employeeTaxes, setEmployeeTaxes] = useState(
-    payrollRecord.deductions.taxes,
-  )
-
-  const [employerTaxes, setEmployerTaxes] = useState(
-    payrollRecord.employerTaxes,
-  )
-  const [netPay, setNetPay] = useState<number>(payrollRecord.netPay)
+  const [taxResults, setTaxResults] = useState({
+    employeeTaxes: payrollRecord.deductions.taxes,
+    employerTaxes: payrollRecord.employerTaxes,
+    netPay: payrollRecord.netPay,
+  })
   const [isCalculating, setIsCalculating] = useState(false)
 
   // Current earnings for YTD calculation (use hourly rate)
@@ -76,22 +73,22 @@ export default function PayrollForm({
       totalGrossPay: currentTotal,
     },
     employeeTaxes: {
-      federalIncomeTax: employeeTaxes.federalIncomeTax,
-      stateIncomeTax: employeeTaxes.stateIncomeTax,
-      socialSecurityTax: employeeTaxes.socialSecurityTax,
-      medicareTax: employeeTaxes.medicareTax,
-      sdi: employeeTaxes.sdi,
-      total: employeeTaxes.total,
+      federalIncomeTax: taxResults.employeeTaxes.federalIncomeTax,
+      stateIncomeTax: taxResults.employeeTaxes.stateIncomeTax,
+      socialSecurityTax: taxResults.employeeTaxes.socialSecurityTax,
+      medicareTax: taxResults.employeeTaxes.medicareTax,
+      sdi: taxResults.employeeTaxes.sdi,
+      total: taxResults.employeeTaxes.total,
     },
     employerTaxes: {
-      futa: employerTaxes.futa,
-      socialSecurityTax: employerTaxes.socialSecurityTax,
-      medicareTax: employerTaxes.medicareTax,
-      ett: employerTaxes.ett,
-      sui: employerTaxes.sui,
-      total: employerTaxes.total,
+      futa: taxResults.employerTaxes.futa,
+      socialSecurityTax: taxResults.employerTaxes.socialSecurityTax,
+      medicareTax: taxResults.employerTaxes.medicareTax,
+      ett: taxResults.employerTaxes.ett,
+      sui: taxResults.employerTaxes.sui,
+      total: taxResults.employerTaxes.total,
     },
-    netPay: netPay,
+    netPay: taxResults.netPay,
   })
 
   // Refs for handling stale responses
@@ -124,9 +121,11 @@ export default function PayrollForm({
 
         // Only apply the latest response (prevent stale data)
         if (currentRequestId === calculationCounterRef.current) {
-          setEmployeeTaxes(result.employeeTaxes)
-          setEmployerTaxes(result.employerTaxes)
-          setNetPay(result.netPay)
+          setTaxResults({
+            employeeTaxes: result.employeeTaxes,
+            employerTaxes: result.employerTaxes,
+            netPay: result.netPay,
+          })
         }
       } catch (error) {
         if (error instanceof Error && error.name !== "AbortError") {
@@ -176,10 +175,10 @@ export default function PayrollForm({
             totalGrossPay: currentTotal,
           },
           deductions: {
-            taxes: employeeTaxes,
+            taxes: taxResults.employeeTaxes,
           },
-          employerTaxes: employerTaxes,
-          netPay: netPay,
+          employerTaxes: taxResults.employerTaxes,
+          netPay: taxResults.netPay,
         })
 
         if (result.success) {
@@ -205,7 +204,7 @@ export default function PayrollForm({
         address={payrollRecord.address}
         periodStart={payrollRecord.payPeriod.startDate}
         periodEnd={payrollRecord.payPeriod.endDate}
-        netPay={netPay}
+        netPay={taxResults.netPay}
         payDate={payrollRecord.payPeriod.payDate}
       />
 
@@ -227,13 +226,13 @@ export default function PayrollForm({
       />
 
       <EmployeeTaxes
-        employeeTax={employeeTaxes}
-        setEmployeeTax={setEmployeeTaxes}
+        employeeTax={taxResults.employeeTaxes}
+        setEmployeeTax={(taxes) => setTaxResults((prev) => ({ ...prev, employeeTaxes: taxes }))}
         ytd={ytdPlusCurrent}
         readOnly={true}
       />
 
-      <EmployerTaxes employerTax={employerTaxes} ytd={ytdPlusCurrent} />
+      <EmployerTaxes employerTax={taxResults.employerTaxes} ytd={ytdPlusCurrent} />
 
       {!isReadOnly && (
         <div className="flex justify-end items-center gap-2">
