@@ -169,9 +169,22 @@ export async function updateCompanyStateRate(
     effectiveDate,
   }
 
-  // Push current rate to history before updating
-  if (company.currentStateRate) {
-    company.stateRatesHistory.push(company.currentStateRate)
+  // CA UI/ETT rates are annual — updated once per year.
+  // If the user is correcting the rate for the same year, replace in place.
+  // If setting a new year's rate, archive the old one to history.
+  if (company.currentStateRate?.effectiveDate) {
+    const currentYear = new Date(company.currentStateRate.effectiveDate).getFullYear()
+    const newYear = effectiveDate.getFullYear()
+
+    if (effectiveDate < new Date(company.currentStateRate.effectiveDate) && newYear !== currentYear) {
+      return { success: false, error: STATE_RATE_ERRORS.EFFECTIVE_DATE_BEFORE_CURRENT }
+    }
+
+    if (newYear !== currentYear) {
+      // New year's rate — archive the current rate to history
+      company.stateRatesHistory.push(company.currentStateRate)
+    }
+    // Same year — replace in place (no archive, user is correcting the rate)
   }
   company.currentStateRate = newRate
 

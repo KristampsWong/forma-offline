@@ -61,6 +61,7 @@ export const EMPLOYEE_ERRORS = {
  */
 export const STATE_RATE_ERRORS = {
   FUTURE_DATE: "Effective date cannot be in the future. Please set a date that is today or earlier.",
+  EFFECTIVE_DATE_BEFORE_CURRENT: "Effective date cannot be before the current rate's effective date. Update the existing rate instead.",
 } as const
 
 /**
