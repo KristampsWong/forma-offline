@@ -24,7 +24,6 @@ export const PAY_TYPES = [
 // Pay frequencies (Payroll Schedule)
 export const PAY_FREQUENCIES = [
   { value: "monthly", label: "Monthly" },
-  { value: "biweekly", label: "Biweekly" },
 ] as const
 
 // Pay methods

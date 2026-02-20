@@ -31,7 +31,7 @@ const stateValidation = z
   .string()
   .min(2, { message: "State must be at least 2 characters." })
 
-const payFrequencyValidation = z.enum(["biweekly", "monthly"])
+const payFrequencyValidation = z.enum(["monthly"])
 
 // ========================================
 // Client-side form schema (flat structure)

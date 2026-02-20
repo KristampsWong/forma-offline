@@ -12,11 +12,10 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
-import type { ICompany } from "@/models/company"
-import type { LeanDoc } from "@/types/db"
+import type { CompanyData } from "@/types/company"
 
 import { AppSidebarNav } from "./app-sidebar-nav"
-// import { SettingsDialogHost } from "./company/settings/settings-dialog-host"
+import { SettingsDialogHost } from "./company/settings/settings-dialog-host"
 import { buttonVariants } from "./ui/button"
 
 export type SidebarUserInfo = {
@@ -28,12 +27,8 @@ export type SidebarUserInfo = {
 export function AppSidebar({
   companyData,
 } : {
-  companyData : LeanDoc<ICompany> | null
+  companyData : CompanyData | null
 }) {
-  // Serialize company data for the Client Component (SettingsDialogHost)
-  // This converts MongoDB objects (Date, ObjectId) to plain values
-  // const serializedCompanyData = serializeForClient(companyData)
-
   return (
     <Sidebar collapsible="icon" variant="floating">
       <SidebarHeader>
@@ -84,7 +79,7 @@ export function AppSidebar({
           </span>
         </a>
       </SidebarFooter>
-      {/* <SettingsDialogHost companyData={serializedCompanyData} /> */}
+      <SettingsDialogHost companyData={companyData} />
     </Sidebar>
   )
 }

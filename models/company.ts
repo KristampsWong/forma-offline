@@ -2,7 +2,7 @@ import mongoose, { Document, Model } from "mongoose"
 
 // --- Types ---
 
-export type PayFrequency = "biweekly" | "monthly"
+export type PayFrequency = "monthly"
 export type CompanyType = "llc" | "corporation" | "partnership" | "sole_proprietorship"
 
 export interface IPayFrequencyHistory {
@@ -38,7 +38,6 @@ export interface ICompany {
   companyType: CompanyType
   payFrequency: PayFrequency
   payFrequencyHistory: IPayFrequencyHistory[]
-  biweeklyAnchorDate?: string
   createdAt: Date
   updatedAt: Date
 }
@@ -50,7 +49,7 @@ export type CompanyDocument = ICompany & Document
 const PayFrequencyHistorySchema = new mongoose.Schema<IPayFrequencyHistory>({
   payFrequency: {
     type: String,
-    enum: ["biweekly", "monthly"],
+    enum: ["monthly"],
     required: true,
   },
   effectiveDate: {
@@ -145,22 +144,11 @@ const CompanySchema = new mongoose.Schema<CompanyDocument>(
     },
     payFrequency: {
       type: String,
-      enum: ["biweekly", "monthly"],
+      enum: ["monthly"],
       required: true,
-      default: "biweekly",
+      default: "monthly",
     },
     payFrequencyHistory: [PayFrequencyHistorySchema],
-    biweeklyAnchorDate: {
-      type: String,
-      required: false,
-      validate: {
-        validator: (v: string) => {
-          if (!v) return true
-          return /^\d{4}-\d{2}-\d{2}$/.test(v)
-        },
-        message: "biweeklyAnchorDate must be in YYYY-MM-DD format",
-      },
-    },
   },
   {
     timestamps: true,
