@@ -38,7 +38,7 @@ export default function EmployeeTaxes({
     totalSocialSecurity,
     totalMedicare,
     totalSDI,
-    totalDeductions,
+    totalEmployeeTaxes,
   } = ytd
   return (
     <FormLayout title={"Employee taxes"}>
@@ -130,7 +130,7 @@ export default function EmployeeTaxes({
               {formatAmount(total, "currency")}
             </TableCell>
             <TableCell className="text-end tracking-wide">
-              {formatAmount(totalDeductions, "currency")}
+              {formatAmount(totalEmployeeTaxes, "currency")}
             </TableCell>
           </TableRow>
         </TableFooter>

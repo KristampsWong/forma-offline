@@ -138,6 +138,7 @@ export interface YTDData {
   totalSocialSecurity: number
   totalMedicare: number
   totalSDI: number
+  totalEmployeeTaxes: number
   totalDeductions: number
   totalNetPay: number
   employerTotalFUTA: number

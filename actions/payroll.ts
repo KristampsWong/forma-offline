@@ -6,6 +6,7 @@ import {
   getPayrollRecordByIdCore,
   updatePayrollRecordCore,
 } from "@/lib/services/payroll/crud"
+import { batchCreatePayrollRecordsCore } from "@/lib/services/payroll/batch"
 import { getPayrollTableDataCore } from "@/lib/services/payroll/queries"
 import { getPayrollYTDCore } from "@/lib/services/payroll/reporting"
 import type { PayrollRecord } from "@/types/payroll"
@@ -64,5 +65,22 @@ export async function updatePayrollRecord(
 ) {
   return withAuth((userId) =>
     updatePayrollRecordCore(userId, payrollId, updateData),
+  )
+}
+
+export async function batchCreateDefaultPayrollRecords(
+  startDate: string,
+  endDate: string,
+  payDate: string,
+  employeeHours?: Record<string, number>,
+) {
+  return withAuth((userId) =>
+    batchCreatePayrollRecordsCore(
+      userId,
+      startDate,
+      endDate,
+      payDate,
+      employeeHours,
+    ),
   )
 }

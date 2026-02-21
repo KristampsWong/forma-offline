@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { AmountInput } from "@/components/ui/amount-input"
 import { Button } from "@/components/ui/button"
 import {
@@ -11,13 +11,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { PayFrequency } from "@/lib/constants/employment-constants"
 import { formatAmount } from "@/lib/utils"
 import type { PayrollTableData } from "@/types/payroll"
 import { RoundingToCents } from "@/lib/payroll"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { createEmployeePayrollRecord } from "@/actions/payroll"
+import {
+  createEmployeePayrollRecord,
+  batchCreateDefaultPayrollRecords,
+} from "@/actions/payroll"
 interface PayrollEmployeeListProps {
   data: PayrollTableData[]
   startDate: string
@@ -45,7 +47,78 @@ export default function PayrollEmployeeList({
   const [grossPayMap, setGrossPayMap] = useState<Record<string, number>>(() =>
     Object.fromEntries(data.map((e) => [e.id, e.grossPay])),
   )
+  const [saveLoading, setSaveLoading] = useState(false)
+  const [previewLoading, setPreviewLoading] = useState(false)
   const router = useRouter()
+
+  const allApproved = useMemo(
+    () => data.length > 0 && data.every((e) => e.status === "approved"),
+    [data],
+  )
+  const hasHoursChanged = useMemo(
+    () =>
+      data.some((row) => {
+        const current = parseFloat(hoursMap[row.id] ?? "") || 0
+        return current !== row.hours
+      }),
+    [data, hoursMap],
+  )
+
+  // Get only changed employee hours for optimized API calls (used for Save Edits)
+  const getChangedEmployeeHours = (): Record<string, number> => {
+    const changed: Record<string, number> = {}
+    data.forEach((row) => {
+      const currentHours =
+        parseFloat(hoursMap[row.id] ?? row.hours.toString()) || 0
+      if (currentHours !== row.hours) {
+        changed[row.id] = currentHours
+      }
+    })
+    return changed
+  }
+
+  // Get all employee hours (used for Preview Payroll to create records for everyone)
+  const getAllEmployeeHours = (): Record<string, number> => {
+    const all: Record<string, number> = {}
+    data.forEach((row) => {
+      const currentHours =
+        parseFloat(hoursMap[row.id] ?? row.hours.toString()) || 0
+      all[row.id] = currentHours
+    })
+    return all
+  }
+
+  // Shared handler for save/preview operations
+  const handleBatchPayroll = async (options: {
+    setLoading: (loading: boolean) => void
+    onSuccess: () => void
+    successMessage?: string
+    useAllEmployees?: boolean
+  }) => {
+    const { setLoading, onSuccess, successMessage, useAllEmployees } = options
+    setLoading(true)
+    try {
+      const result = await batchCreateDefaultPayrollRecords(
+        startDate,
+        endDate,
+        payDate,
+        useAllEmployees ? getAllEmployeeHours() : getChangedEmployeeHours(),
+      )
+
+      if (result.success) {
+        if (successMessage) {
+          toast.success(successMessage)
+        }
+        onSuccess()
+      } else {
+        toast.error(result.error || "Failed to process payroll records.")
+      }
+    } catch (_error) {
+      toast.error("An unexpected error occurred.")
+    } finally {
+      setLoading(false)
+    }
+  }
   return (
     <div className="space-y-4">
       <Table>
@@ -147,6 +220,53 @@ export default function PayrollEmployeeList({
           )}
         </TableBody>
       </Table>
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="outline"
+          onClick={() =>
+            handleBatchPayroll({
+              setLoading: setSaveLoading,
+              onSuccess: () => router.refresh(),
+              successMessage: "Payroll records saved successfully.",
+            })
+          }
+          disabled={
+            !hasEddAccount ||
+            saveLoading ||
+            previewLoading ||
+            allApproved ||
+            data.length === 0 ||
+            !hasHoursChanged
+          }
+        >
+          {saveLoading ? "Saving..." : "Save Edits"}
+        </Button>
+        <Button
+          onClick={() =>
+            handleBatchPayroll({
+              setLoading: setPreviewLoading,
+              onSuccess: () => {
+                const params = new URLSearchParams({
+                  startDate,
+                  endDate,
+                  payDate,
+                })
+                router.push(`/payroll/preview?${params.toString()}`)
+              },
+              useAllEmployees: true,
+            })
+          }
+          disabled={
+            !hasEddAccount ||
+            saveLoading ||
+            previewLoading ||
+            allApproved ||
+            data.length === 0
+          }
+        >
+          {previewLoading ? "Loading..." : "Preview Payroll"}
+        </Button>
+      </div>
     </div>
   )
 }

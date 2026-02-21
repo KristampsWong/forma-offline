@@ -46,7 +46,7 @@ export interface TaxCalculationInput {
   stateTax?: IStateTaxWithholding
   companyRates: IStateRate
   taxExemptions?: ITaxExemptions
-  taxRates?: TaxRates
+  taxRates: TaxRates
 }
 
 export interface TaxCalculationResult {

@@ -151,6 +151,7 @@ export default function PayrollDateControls({
               selected={selectedPayDate}
               captionLayout="dropdown"
               onSelect={handlePayDateSelect}
+              disabled={parseDateParam(start) ? { before: parseDateParam(start)! } : undefined}
             />
           </PopoverContent>
         </Popover>

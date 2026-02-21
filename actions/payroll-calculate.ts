@@ -2,6 +2,7 @@
 
 import { requireAuth } from "@/lib/auth/auth-helpers"
 import { getTaxRates } from "@/lib/constants/tax-rates"
+import { EMPLOYEE_ERRORS, PAYROLL_ERRORS } from "@/lib/constants/errors"
 import { formatDateParam } from "@/lib/date/utils"
 import dbConnect from "@/lib/db/dbConnect"
 import { calculatePayrollTaxesCore } from "@/lib/payroll"
@@ -38,7 +39,7 @@ export async function calculatePayrollTaxes(input: {
     .lean<{ currentStateRate: IStateRate }>()
 
   if (!company?.currentStateRate) {
-    throw new Error("Company not found or missing state tax rates")
+    throw new Error(PAYROLL_ERRORS.MISSING_STATE_RATES)
   }
 
   // Fetch employee tax withholding data
@@ -54,7 +55,7 @@ export async function calculatePayrollTaxes(input: {
     }>()
 
   if (!employee) {
-    throw new Error("Employee not found")
+    throw new Error(EMPLOYEE_ERRORS.NOT_FOUND)
   }
 
   // Get YTD data up to (but not including) current period
