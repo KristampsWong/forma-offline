@@ -12,7 +12,7 @@ import { SettingsDialogLayout } from "@/components/company/settings/settings-dia
 import { FieldGroup } from "@/components/ui/field"
 import { FormAlert } from "@/components/ui/form-alert"
 import { FormDateField, FormField } from "@/components/ui/form-field"
-import { toDateOnly } from "@/lib/date/utils"
+import { extractDateOnly } from "@/lib/date/utils"
 import { logger } from "@/lib/logger"
 import {
   type StateRateFormValues,
@@ -43,12 +43,8 @@ export function StateRateSection({
           : "0.1",
       eddAccountNumber: currentEDDAccountNumber || "",
       effectiveDate: currentEffectiveDate
-        ? toDateOnly(
-            typeof currentEffectiveDate === "string"
-              ? new Date(currentEffectiveDate)
-              : currentEffectiveDate
-          )
-        : toDateOnly(new Date()),
+        ? (extractDateOnly(currentEffectiveDate) ?? "")
+        : (extractDateOnly(new Date()) ?? ""),
     },
   })
 

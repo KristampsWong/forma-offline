@@ -1,6 +1,4 @@
-import { format, formatDistanceToNowStrict, isValid } from "date-fns"
-
-type DateOnly = string // MM/DD/YYYY format
+import { formatDistanceToNowStrict, isValid } from "date-fns"
 
 interface PayrollDateParams {
   start: Date
@@ -31,21 +29,6 @@ export const formatDateInput = (value : string) => {
   if (digits.length <= 2) return digits
   if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`
   return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`
-}
-
-/**
- * Convert Date object to DateOnly string
- * @param date - Date object (uses local timezone)
- * @returns MM/DD/YYYY date string
- *
- * @example
- * toDateOnly(new Date(2000, 0, 15)) // "01/15/2000"
- */
-export function toDateOnly(date : Date) : DateOnly {
-  if (!date || !isValid(date)) {
-    throw new Error("Invalid date provided to toDateOnly")
-  }
-  return format(date, "MM/dd/yyyy")
 }
 
 /**
@@ -173,6 +156,22 @@ export function extractDateOnly(date : Date | string | null | undefined) : strin
 }
 
 /**
+ * Convert a UTC midnight Date to a local-timezone Date with the same calendar date.
+ * Use this when passing UTC dates to UI components that expect local dates (e.g., react-day-picker).
+ *
+ * @param utcDate - Date object at UTC midnight (e.g., from parseDateParam or MongoDB)
+ * @returns Date object at local midnight with the same year/month/day
+ *
+ * @example
+ * // UTC midnight: 2026-01-15T00:00:00.000Z
+ * // In PST (UTC-8), toLocalDate gives: 2026-01-15T00:00:00.000-0800
+ * toLocalDate(new Date("2026-01-15T00:00:00.000Z")) // local Jan 15, not Jan 14
+ */
+export function toLocalDate(utcDate: Date): Date {
+  return new Date(utcDate.getUTCFullYear(), utcDate.getUTCMonth(), utcDate.getUTCDate())
+}
+
+/**
  * Get year date range (January 1 to December 31) in UTC
  * @param year - The year
  * @returns Start and end dates for the year
@@ -193,7 +192,7 @@ export function getYearDateRange(year: number): { start: Date; end: Date } {
 // ============================================================================
 
 /**
- * Format Date as MM-DD-YYYY string using local time (no timezone offset)
+ * Format Date as MM-DD-YYYY string using UTC date components
  * Use this for URL search params - matches DB format
  *
  * @param date - Date object
@@ -210,14 +209,14 @@ export function formatDateParam(date: Date): string {
 }
 
 /**
- * Parse MM-DD-YYYY string as local date (not UTC)
+ * Parse MM-DD-YYYY string as UTC midnight Date
  * Returns null if invalid format or invalid date
  *
  * @param dateString - Date string in MM-DD-YYYY format
- * @returns Date object or null if invalid
+ * @returns Date object set to UTC midnight, or null if invalid
  *
  * @example
- * parseDateParam("01-15-2026") // Date(2026, 0, 15)
+ * parseDateParam("01-15-2026") // 2026-01-15T00:00:00.000Z
  * parseDateParam("invalid") // null
  * parseDateParam("13-01-2026") // null (invalid month)
  * parseDateParam("01-32-2026") // null (invalid day)
@@ -240,15 +239,15 @@ export function parseDateParam(dateString: string | null | undefined): Date | nu
   if (month < 1 || month > 12) return null
   if (day < 1 || day > 31) return null
 
-  // Create date and verify it's valid (handles invalid dates like Feb 30)
-  const date = new Date(year, month - 1, day)
+  // Create UTC midnight date and verify it's valid (handles invalid dates like Feb 30)
+  const date = new Date(Date.UTC(year, month - 1, day))
 
   // Check if date is valid and matches input (catches invalid dates like 01-32-2026)
   if (
     !isValid(date) ||
-    date.getFullYear() !== year ||
-    date.getMonth() !== month - 1 ||
-    date.getDate() !== day
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
   ) {
     return null
   }
@@ -276,37 +275,30 @@ export function parseDateParam(dateString: string | null | undefined): Date | nu
 export function getCurrentPayPeriod(
   paySchedule: "biweekly" | "monthly"
 ): PayrollDateParams {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const now = new Date()
+  const year = now.getUTCFullYear()
+  const month = now.getUTCMonth()
+  const day = now.getUTCDate()
 
   if (paySchedule === "monthly") {
-    // Monthly: first day to last day of current month
-    const start = new Date(today.getFullYear(), today.getMonth(), 1)
-    const end = new Date(today.getFullYear(), today.getMonth() + 1, 0) // Last day of month
-    return {
-      start,
-      end,
-      payDate: end,
-    }
+    // Monthly: first day to last day of current month (UTC midnight)
+    const start = new Date(Date.UTC(year, month, 1))
+    const end = new Date(Date.UTC(year, month + 1, 0)) // Last day of month
+    return { start, end, payDate: end }
   } else {
     // Biweekly: 14-day periods starting from Jan 1 of current year
-    const yearStart = new Date(today.getFullYear(), 0, 1)
-    const daysSinceYearStart = Math.floor(
+    const yearStart = new Date(Date.UTC(year, 0, 1))
+    const today = new Date(Date.UTC(year, month, day))
+    const daysSinceYearStart = Math.round(
       (today.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24)
     )
     const periodIndex = Math.floor(daysSinceYearStart / 14)
 
-    const start = new Date(yearStart)
-    start.setDate(start.getDate() + periodIndex * 14)
+    const MS_PER_DAY = 86400000
+    const start = new Date(yearStart.getTime() + periodIndex * 14 * MS_PER_DAY)
+    const end = new Date(start.getTime() + 13 * MS_PER_DAY)
 
-    const end = new Date(start)
-    end.setDate(end.getDate() + 13) // 14 days total (0-13)
-
-    return {
-      start,
-      end,
-      payDate: end,
-    }
+    return { start, end, payDate: end }
   }
 }
 
@@ -340,8 +332,8 @@ export function parsePayrollDateParams(params: {
   end?: string | null
   payDate?: string | null
 }): PayrollDateParams {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const now = new Date()
+  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
 
   // Parse all dates
   const startDate = parseDateParam(params.start)
