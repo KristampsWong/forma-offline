@@ -6,8 +6,14 @@ import {
   getPayrollRecordByIdCore,
   updatePayrollRecordCore,
 } from "@/lib/services/payroll/crud"
-import { batchCreatePayrollRecordsCore } from "@/lib/services/payroll/batch"
-import { getPayrollTableDataCore } from "@/lib/services/payroll/queries"
+import {
+  approvePayrollRecordsCore,
+  batchCreatePayrollRecordsCore,
+} from "@/lib/services/payroll/batch"
+import {
+  getPayrollTableDataCore,
+  getPreviewPayrollCore,
+} from "@/lib/services/payroll/queries"
 import { getPayrollYTDCore } from "@/lib/services/payroll/reporting"
 import type { PayrollRecord } from "@/types/payroll"
 
@@ -65,6 +71,24 @@ export async function updatePayrollRecord(
 ) {
   return withAuth((userId) =>
     updatePayrollRecordCore(userId, payrollId, updateData),
+  )
+}
+
+/**
+ * Get payroll preview data for the preview page
+ */
+export async function getPreviewPayroll(startDate: string, endDate: string) {
+  return withAuth((userId) =>
+    getPreviewPayrollCore(userId, startDate, endDate),
+  )
+}
+
+/**
+ * Approve payroll records (change status from pending to approved)
+ */
+export async function approvePayrollRecords(payrollIds: string[]) {
+  return withAuth((userId) =>
+    approvePayrollRecordsCore(userId, payrollIds),
   )
 }
 

@@ -125,6 +125,28 @@ export interface PayrollTableData {
   status: string
 }
 
+export interface PayrollPreviewData {
+  payrollId: string
+  employeeId: string
+  employeeName: string
+  totalHours: number
+  grossPay: number
+  employeeTaxesAndDeductions: number
+  netPay: number
+  employerTaxesAndContributions: number
+  payFrequency: string
+}
+
+export interface PayrollPreviewOverview {
+  totalPayrollCost: number
+  totalGrossPay: number
+  totalEmployerTaxesAndContributions: number
+  totalNetPay: number
+  payPeriodStart: string
+  payPeriodEnd: string
+  payDate: string
+}
+
 export interface YTDData {
   salary: {
     regularPay: number

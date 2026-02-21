@@ -2,7 +2,7 @@
  * Read operations (company + employee scoped) — 5 functions:
  *  1. getPayrollTableDataCore        ✅ implemented
  *  2. getCompanyPayrollRecordsCore   (planned)
- *  3. getPreviewPayrollCore          (planned)
+ *  3. getPreviewPayrollCore          ✅ implemented
  *  4. getEmployeePayrollsCore        (planned)
  *  5. getEmployeePayrollDetailsCore  (planned)
  */
@@ -11,9 +11,13 @@ import type { PayFrequency } from "@/lib/constants/employment-constants"
 import Company from "@/models/company"
 import Employee from "@/models/employee"
 import Payroll from "@/models/payroll"
-import { parseDateParam } from "@/lib/date/utils"
-import { calculatePayrollForEmployee } from "@/lib/payroll"
-import type { PayrollTableData } from "@/types/payroll"
+import { extractDateOnly, parseDateParam } from "@/lib/date/utils"
+import { calculatePayrollForEmployee, RoundingToCents } from "@/lib/payroll"
+import type {
+  PayrollPreviewData,
+  PayrollPreviewOverview,
+  PayrollTableData,
+} from "@/types/payroll"
 import type {
   EmployeeStub,
   PayrollRecordFromDB,
@@ -140,4 +144,106 @@ export async function getPayrollTableDataCore(
   })
 
   return tableData
+}
+
+
+export async function getPreviewPayrollCore(
+  userId: string,
+  startDate: string,
+  endDate: string,
+): Promise<{
+  data: PayrollPreviewData[]
+  overview: PayrollPreviewOverview
+}> {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId }).select("_id")
+  if (!company) {
+    throw new Error("Company not found.")
+  }
+
+  const startDateParsed = parseDateParam(startDate)
+  const endDateParsed = parseDateParam(endDate)
+
+  if (!startDateParsed || !endDateParsed) {
+    throw new Error("Invalid date format. Expected MM-DD-YYYY.")
+  }
+
+  const displayStart = startDate.replace(/-/g, "/")
+  const displayEnd = endDate.replace(/-/g, "/")
+
+  const payrollRecords = await Payroll.find({
+    companyId: company._id,
+    "payPeriod.startDate": startDateParsed,
+    "payPeriod.endDate": endDateParsed,
+    approvalStatus: "pending",
+  })
+    .select(
+      "employeeId employeeInfo.firstName employeeInfo.lastName payPeriod.periodType payPeriod.payDate hoursWorked.totalHours earnings.totalGrossPay deductions.preTax.total deductions.taxes.total deductions.postTax.total employerTaxes.total netPay",
+    )
+    .lean<PayrollRecordFromDB[]>()
+
+  if (!payrollRecords || payrollRecords.length === 0) {
+    return {
+      data: [],
+      overview: {
+        totalPayrollCost: 0,
+        totalGrossPay: 0,
+        totalEmployerTaxesAndContributions: 0,
+        totalNetPay: 0,
+        payPeriodStart: displayStart,
+        payPeriodEnd: displayEnd,
+        payDate: displayEnd,
+      },
+    }
+  }
+
+  let totalGrossPay = 0
+  let totalEmployerTaxes = 0
+  let totalNetPay = 0
+
+  const previewData: PayrollPreviewData[] = payrollRecords.map((record) => {
+    const employeeName = `${record.employeeInfo.firstName} ${record.employeeInfo.lastName}`
+
+    const employeeTaxesAndDeductions = RoundingToCents(
+      record.deductions.preTax.total +
+        record.deductions.taxes.total +
+        record.deductions.postTax.total,
+    )
+
+    totalGrossPay += record.earnings.totalGrossPay
+    totalEmployerTaxes += record.employerTaxes.total
+    totalNetPay += record.netPay
+
+    return {
+      payrollId: record._id.toString(),
+      employeeId: record.employeeId.toString(),
+      employeeName,
+      totalHours: record.hoursWorked?.totalHours ?? 0,
+      grossPay: record.earnings.totalGrossPay,
+      employeeTaxesAndDeductions,
+      netPay: record.netPay,
+      employerTaxesAndContributions: record.employerTaxes.total,
+      payFrequency: record.payPeriod?.periodType ?? "monthly",
+    }
+  })
+
+  const payDate = payrollRecords[0].payPeriod?.payDate
+    ? extractDateOnly(payrollRecords[0].payPeriod.payDate) ?? displayEnd
+    : displayEnd
+
+  const overview: PayrollPreviewOverview = {
+    totalPayrollCost: RoundingToCents(totalGrossPay + totalEmployerTaxes),
+    totalGrossPay: RoundingToCents(totalGrossPay),
+    totalEmployerTaxesAndContributions: RoundingToCents(totalEmployerTaxes),
+    totalNetPay: RoundingToCents(totalNetPay),
+    payPeriodStart: displayStart,
+    payPeriodEnd: displayEnd,
+    payDate,
+  }
+
+  return {
+    data: previewData,
+    overview,
+  }
 }

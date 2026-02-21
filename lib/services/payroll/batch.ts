@@ -1,7 +1,7 @@
 /**
  * Multi-record operations — 2 functions:
  *  1. batchCreatePayrollRecordsCore   ✅ implemented
- *  2. approvePayrollRecordsCore       (planned)
+ *  2. approvePayrollRecordsCore       ✅ implemented
  */
 import dbConnect from "@/lib/db/dbConnect"
 import Company from "@/models/company"
@@ -249,5 +249,78 @@ export async function batchCreatePayrollRecordsCore(
     createdCount: payrollRecordsToCreate.length,
     updatedCount: employeesToUpdate.length,
     approvedCount: approvedEmployeeIds.size,
+  }
+}
+
+
+
+/**
+ * Approve payroll records core logic.
+ * Service layer function — takes userId, handles company lookup internally.
+ */
+export async function approvePayrollRecordsCore(
+  userId: string,
+  payrollIds: string[],
+): Promise<{
+  modifiedCount: number
+  endDate?: Date
+  alreadyApproved: boolean
+}> {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId }).select("_id")
+  if (!company) {
+    throw new Error(COMPANY_ERRORS.NOT_FOUND)
+  }
+
+  if (!payrollIds || payrollIds.length === 0) {
+    throw new Error("No payroll records specified.")
+  }
+
+  const result = await Payroll.updateMany(
+    {
+      _id: { $in: payrollIds },
+      companyId: company._id,
+      approvalStatus: "pending",
+    },
+    {
+      $set: {
+        approvalStatus: "approved",
+        "approvalInfo.approvedBy": userId,
+        "approvalInfo.approvedAt": new Date(),
+      },
+    },
+  )
+
+  if (result.modifiedCount === 0) {
+    // Check if already approved
+    const existingApproved = await Payroll.findOne({
+      _id: { $in: payrollIds },
+      companyId: company._id,
+      approvalStatus: "approved",
+    }).select("payPeriod.endDate")
+
+    if (existingApproved) {
+      return {
+        modifiedCount: 0,
+        endDate: existingApproved.payPeriod.endDate,
+        alreadyApproved: true,
+      }
+    }
+
+    throw new Error("No pending payroll records found to approve.")
+  }
+
+  // Get end date for tax sync
+  const sampleRecord = await Payroll.findOne({
+    _id: { $in: payrollIds },
+    companyId: company._id,
+    approvalStatus: "approved",
+  }).select("payPeriod.endDate")
+
+  return {
+    modifiedCount: result.modifiedCount,
+    endDate: sampleRecord?.payPeriod.endDate,
+    alreadyApproved: false,
   }
 }

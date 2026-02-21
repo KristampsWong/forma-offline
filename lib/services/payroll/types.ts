@@ -23,6 +23,7 @@ export interface PayrollRecordFromDB {
   _id: string
   employeeId: string
   employeeInfo: { firstName: string; lastName: string }
+  payPeriod?: { periodType: string; startDate: Date; endDate: Date; payDate: Date }
   hoursWorked?: { totalHours: number }
   compensation: { payType: string; payRate: number }
   earnings: {
@@ -40,6 +41,7 @@ export interface PayrollRecordFromDB {
       medicareTax: number
       stateIncomeTax: number
       sdi: number
+      total: number
     }
     postTax: { total: number }
   }
@@ -49,6 +51,7 @@ export interface PayrollRecordFromDB {
     futa: number
     sui: number
     ett: number
+    total: number
   }
   netPay: number
   approvalStatus: string
