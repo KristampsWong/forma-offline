@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-// import { markFilingAsFiled } from "@/actions/taxes/filling-update"
+import { markFilingAsFiled } from "@/actions/taxes"
 import { extractDateOnly } from "@/lib/date/utils"
 import { getQuarterDates } from "@/lib/tax/deadlines"
 import type {
@@ -108,17 +108,15 @@ export default function TaxFilingCard({
   }
 
   const handleMarkFiled = () => {
-    // return markFilingAsFiled(formType, id).then((res) => {
-    //   if (res.success) {
-    //     const nowIso = new Date().toISOString()
-    //     setLocalFilingStatus("filed")
-    //     setLocalFiledDate(nowIso)
-    //     router.refresh()
-    //   }
-    //   return res
-    // })
-
-     console.log("Mark as filed clicked for", formType, id)
+    return markFilingAsFiled(formType, id).then((res) => {
+      if (res.success) {
+        const nowIso = new Date().toISOString()
+        setLocalFilingStatus("filed")
+        setLocalFiledDate(nowIso)
+        router.refresh()
+      }
+      return res
+    })
   }
 
   const filedDateToDisplay = localFiledDate ?? filedDate

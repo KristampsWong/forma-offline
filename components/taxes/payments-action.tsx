@@ -3,7 +3,7 @@
 import { CircleCheck } from "lucide-react"
 import { useRouter } from "next/navigation"
 import type { TaxPaymentType } from "@/lib/constants/tax-constants"
-// import { markTaxPaymentAsPaid } from "@/actions/taxes/taxpayment-update"
+import { markTaxPaymentAsPaid } from "@/actions/taxes"
 import ConfirmDialog from "@/components/taxes/confirm-dialog"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
@@ -27,7 +27,7 @@ export default function PaymentActions({
   const router = useRouter()
 
   const handleMarkAsPaid = async () => {
-    // await markTaxPaymentAsPaid(taxPaymentId, taxPaymentType, new Date())
+    await markTaxPaymentAsPaid(taxPaymentId, taxPaymentType, new Date())
     router.refresh()
   }
 

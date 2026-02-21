@@ -12,6 +12,12 @@ import {
   getAllTaxPaymentsCore,
   getPaidPaymentRecordsCore,
 } from "@/lib/services/tax/payments"
+import {
+  markFilingAsFiledCore,
+  markTaxPaymentAsPaidCore,
+  type FilingType,
+} from "@/lib/services/tax/filing-updates"
+import type { TaxPaymentType } from "@/lib/constants/tax-constants"
 import type {
   De9Status,
   De9cStatus,
@@ -91,6 +97,39 @@ export async function getFiledFilingRecords(
 ) {
   return withAuth((userId) =>
     getFiledFilingRecordsCore(userId, page, pageSize),
+  )
+}
+
+// --- Filing Updates ---
+
+export async function markFilingAsFiled(
+  filingType: FilingType,
+  filingId: string,
+  filedDate?: string,
+) {
+  return withAuth((userId) =>
+    markFilingAsFiledCore(userId, filingType, filingId, filedDate),
+  )
+}
+
+// --- Tax Payment Updates ---
+
+export async function markTaxPaymentAsPaid(
+  paymentId: string,
+  taxPaymentType: TaxPaymentType,
+  paidDate: Date,
+  paymentMethod?: string,
+  confirmationNumber?: string,
+) {
+  return withAuth((userId) =>
+    markTaxPaymentAsPaidCore(
+      userId,
+      paymentId,
+      taxPaymentType,
+      paidDate,
+      paymentMethod,
+      confirmationNumber,
+    ),
   )
 }
 
