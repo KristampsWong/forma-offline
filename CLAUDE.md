@@ -38,6 +38,7 @@ No test framework is configured yet. Test mode infrastructure exists via `isTest
 - `queries.ts` — read operations (table data, company/employee payrolls, preview)
 - `reporting.ts` — aggregations (YTD, summaries, recent activity)
 - `batch.ts` — multi-record operations (batch create, approve)
+- `builders.ts` — shared payroll record builder used by crud.ts and batch.ts
 - `types.ts` — shared interfaces (`EmployeeStub`, `PayrollRecordFromDB`)
 - Import directly from sub-modules: `@/lib/services/payroll/crud`
 
