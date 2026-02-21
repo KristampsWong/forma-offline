@@ -27,9 +27,24 @@ No test framework is configured yet. Test mode infrastructure exists via `isTest
 
 ### Key Patterns
 
-**Server Actions** (`actions/`):
-- `"use server"` → `requireAuth()` → Zod validate → `await dbConnect()` → query/mutate
-- Return `{ success: true }` or `{ success: false, error: string }`
+**Server Actions + Service Layer** (`actions/` → `lib/services/`):
+- Actions are thin auth glue: `"use server"` → `withAuth(userId => serviceFunction(userId, ...))` → wraps result
+- Return `{ success: true, data }` or `{ success: false, error: string }`
+- Service layer (`lib/services/`) owns all DB + business logic. Framework-agnostic, portable to any Node.js backend.
+- Service functions take `userId` (not `companyId`) and handle company lookup internally.
+
+**Payroll service** (`lib/services/payroll/`):
+- `crud.ts` — single-record operations (create, getById, update)
+- `queries.ts` — read operations (table data, company/employee payrolls, preview)
+- `reporting.ts` — aggregations (YTD, summaries, recent activity)
+- `batch.ts` — multi-record operations (batch create, approve)
+- `builders.ts` — shared payroll record builder used by crud.ts and batch.ts
+- `types.ts` — shared interfaces (`EmployeeStub`, `PayrollRecordFromDB`)
+- Import directly from sub-modules: `@/lib/services/payroll/crud`
+
+**Tax calculations** (`lib/payroll/`):
+- Pure calculation functions — no DB access. Federal withholding, CA state taxes, FICA, FUTA, SDI.
+- `calculatePayrollTaxesCore` is the single source of truth for all tax calculations.
 
 **Auth helpers** (`lib/auth/auth-helpers.ts`):
 - `getCurrentUser()` — React `cache`-wrapped, safe to call multiple times per request

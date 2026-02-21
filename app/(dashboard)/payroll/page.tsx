@@ -1,7 +1,7 @@
 import Header from "@/components/header"
 import PayrollDateControls from "@/components/payroll/payroll-date-controls"
 import { formatDateParam } from "@/lib/date/utils"
-import { endOfMonth, startOfMonth } from "date-fns"
+import { lastDayOfMonth, startOfMonth } from "date-fns"
 import { redirect } from "next/navigation"
 import PayrollEmployeeList from "@/components/payroll/payroll-employee-list"
 import { AddEmployeeButton } from "@/components/employee/add-employee-button"
@@ -18,7 +18,7 @@ export default async function Page({
   if (!start || !end || !payDate) {
     const today = new Date()
     const s = formatDateParam(startOfMonth(today))
-    const e = formatDateParam(endOfMonth(today))
+    const e = formatDateParam(lastDayOfMonth(today))
     const p = formatDateParam(today)
     redirect(`/payroll?start=${s}&end=${e}&payDate=${p}`)
   }

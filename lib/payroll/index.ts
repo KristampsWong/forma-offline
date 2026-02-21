@@ -19,10 +19,6 @@ import type {
 import type { PayFrequency } from "@/lib/constants/employment-constants"
 import type { FederalFilingStatus, StateFilingStatus } from "@/lib/constants/tax-constants"
 
-// Re-export for convenience
-export type { TaxRates }
-export { getTaxRates }
-
 export function calculateHours(
   workhours: number,
   period: {
@@ -48,18 +44,17 @@ export function calculateHours(
   }
 }
 
+/**
+ * Calculate gross pay for a pay period
+ * @param payRate - Hourly rate
+ * @param hours - Total hours worked in the period
+ * @returns Gross pay (payRate × hours)
+ */
 export function calculateGrossPay(
   payRate: number,
   hours: number,
 ) {
   return payRate * hours
-}
-
-/**
- * Calculate hourly rate from pay rate
- */
-export function calculateHourlyRate(salary: number): number {
-  return salary
 }
 
 /**
@@ -170,21 +165,21 @@ export function federalWithholding(
   if (remainingTax < 0) {
     remainingTax = 0
   }
-  console.log("==========")
+
   /** step 4 */
   const finalFederalWithHolding = w4step4c + remainingTax
-  console.log("Final", finalFederalWithHolding)
+
   let FIT = finalFederalWithHolding
 
   const CUSHION_CAP = 10
   const CUSHION_RATE = 0.01
   const cushion = Math.min(grossPay * CUSHION_RATE, CUSHION_CAP)
-  console.log("cushion", cushion)
+
   // Cushion acts as a floor for low-income earners until IRS calculation exceeds it
   if (finalFederalWithHolding <= CUSHION_CAP) {
     FIT = Math.max(finalFederalWithHolding, cushion)
   }
-  console.log("FIT at end", FIT)
+
   return RoundingToCents(FIT)
 }
 
@@ -581,9 +576,6 @@ export function calculatePayrollTaxesCore(
     taxRates,
   } = input
 
-  // Get tax rates - use provided rates or default to current date
-  const rates = taxRates ?? getTaxRates(new Date())
-
   // ===== Employee Taxes =====
 
   // Federal income tax withholding
@@ -597,24 +589,24 @@ export function calculatePayrollTaxesCore(
         federalW4.otherIncome,
         federalW4.deductions,
         federalW4.extraWithholding,
-        rates,
+        taxRates,
       )
     : 0
 
   // Social Security tax (check FICA exemption)
   const socialSecurityTax = taxExemptions?.fica
     ? 0
-    : calculateSocialSecurity(grossPay, ytdGrossPay, rates)
+    : calculateSocialSecurity(grossPay, ytdGrossPay, taxRates)
 
   // Medicare tax (check FICA exemption)
   const medicareTax = taxExemptions?.fica
     ? 0
-    : calculateMedicare(grossPay, rates)
+    : calculateMedicare(grossPay, taxRates)
 
   // Additional Medicare tax (for high earners, check FICA exemption)
   const additionalMedicareTax = taxExemptions?.fica
     ? 0
-    : calculateAdditionalMedicare(grossPay, ytdGrossPay, rates)
+    : calculateAdditionalMedicare(grossPay, ytdGrossPay, taxRates)
 
   // California state income tax
   const stateIncomeTax =
@@ -626,7 +618,7 @@ export function calculatePayrollTaxesCore(
           stateTax.californiaDE4.worksheetA,
           stateTax.californiaDE4.worksheetB,
           stateTax.californiaDE4.additionalWithholding,
-          rates,
+          taxRates,
         )
       : 0
 
@@ -637,7 +629,7 @@ export function calculatePayrollTaxesCore(
     gross: grossPay,
     UIRate: companyRates.UIRate,
     ETTRate: companyRates.ETTRate,
-    taxRates: rates,
+    taxRates,
   })
 
   const sdi = taxExemptions?.sdi ? 0 : caStateTaxes.SDI
@@ -657,17 +649,17 @@ export function calculatePayrollTaxesCore(
   // Employer matching Social Security (check FICA exemption)
   const employerSocialSecurity = taxExemptions?.fica
     ? 0
-    : calculateSocialSecurity(grossPay, ytdGrossPay, rates)
+    : calculateSocialSecurity(grossPay, ytdGrossPay, taxRates)
 
   // Employer matching Medicare (check FICA exemption)
   const employerMedicare = taxExemptions?.fica
     ? 0
-    : calculateMedicare(grossPay, rates)
+    : calculateMedicare(grossPay, taxRates)
 
   // Federal Unemployment Tax (FUTA)
   const employerFUTA = taxExemptions?.futa
     ? 0
-    : calcFUTA(ytdGrossPay, grossPay, rates)
+    : calcFUTA(ytdGrossPay, grossPay, taxRates)
 
   // California State Unemployment Insurance (SUI) and Employment Training Tax (ETT)
   const employerSUI = taxExemptions?.suiEtt ? 0 : caStateTaxes.UI
@@ -725,6 +717,7 @@ export function calculateYTDPlusCurrent(
     totalSocialSecurity: number
     totalMedicare: number
     totalSDI: number
+    totalEmployeeTaxes: number
     totalDeductions: number
     totalNetPay: number
     employerTotalFUTA: number
@@ -776,6 +769,7 @@ export function calculateYTDPlusCurrent(
       ytd.totalSocialSecurity + current.employeeTaxes.socialSecurityTax,
     totalMedicare: ytd.totalMedicare + current.employeeTaxes.medicareTax,
     totalSDI: ytd.totalSDI + current.employeeTaxes.sdi,
+    totalEmployeeTaxes: ytd.totalEmployeeTaxes + current.employeeTaxes.total,
     // totalDeductions = preTax + postTax deductions (not taxes)
     // NOTE: This function's signature doesn't include current.deductions.
     // When deductions are implemented, update signature and add:

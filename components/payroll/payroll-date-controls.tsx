@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { formatDateParam, parseDateParam } from "@/lib/date/utils"
+import { extractDateOnly, formatDateParam, parseDateParam, toLocalDate } from "@/lib/date/utils"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ChevronDownIcon } from "lucide-react"
-import { endOfMonth, startOfMonth } from "date-fns"
+import { endOfMonth, lastDayOfMonth, startOfMonth } from "date-fns"
 import { useRouter, useSearchParams } from "next/navigation"
 
 interface PayPeriod {
@@ -52,7 +52,7 @@ function generatePeriods(): Map<number, PayPeriod[]> {
     for (let month = monthStart; month <= monthEnd; month++) {
       const date = new Date(year, month, 1)
       const s = formatDateParam(startOfMonth(date))
-      const e = formatDateParam(endOfMonth(date))
+      const e = formatDateParam(lastDayOfMonth(date))
       const sDisplay = formatDisplayDate(startOfMonth(date))
       const eDisplay = formatDisplayDate(endOfMonth(date))
 
@@ -82,7 +82,9 @@ export default function PayrollDateControls({
   const [payDateOpen, setPayDateOpen] = useState(false)
 
   const currentPeriodValue = start && end ? `${start}_${end}` : ""
-  const selectedPayDate = parseDateParam(payDate) ?? undefined
+  const parsedPayDate = parseDateParam(payDate)
+  const selectedPayDate = parsedPayDate ? toLocalDate(parsedPayDate) : undefined
+  const parsedStart = parseDateParam(start)
   const periodsByYear = generatePeriods()
 
   function handlePeriodChange(value: string) {
@@ -139,8 +141,8 @@ export default function PayrollDateControls({
               className="w-48 justify-between font-normal"
               disabled={disabled}
             >
-              {selectedPayDate
-                ? formatDisplayDate(selectedPayDate)
+              {parsedPayDate
+                ? extractDateOnly(parsedPayDate)
                 : "Select date"}
               <ChevronDownIcon />
             </Button>
@@ -151,6 +153,7 @@ export default function PayrollDateControls({
               selected={selectedPayDate}
               captionLayout="dropdown"
               onSelect={handlePayDateSelect}
+              disabled={parsedStart ? { before: toLocalDate(parsedStart) } : undefined}
             />
           </PopoverContent>
         </Popover>

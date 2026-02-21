@@ -1,14 +1,29 @@
+/**
+ * Single-record CRUD operations — 3 functions:
+ *  1. createPayrollRecordCore    ✅ implemented
+ *  2. getPayrollRecordByIdCore   (planned)
+ *  3. updatePayrollRecordCore    (planned)
+ */
 import dbConnect from "@/lib/db/dbConnect"
 import Company from "@/models/company"
 import Employee from "@/models/employee"
 import Payroll from "@/models/payroll"
-import { parseDateParam } from "@/lib/date/utils"
+import { formatDateParam, parseDateParam } from "@/lib/date/utils"
 import {
   calculateHours,
   calculateGrossPay,
   calculatePayrollTaxesCore,
 } from "@/lib/payroll"
+import { getTaxRates } from "@/lib/constants/tax-rates"
+import { COMPANY_ERRORS, EMPLOYEE_ERRORS, PAYROLL_ERRORS } from "@/lib/constants/errors"
 import { getPayrollYTDCore } from "@/lib/services/payroll/reporting"
+import { buildPayrollRecord } from "@/lib/services/payroll/builders"
+import type { PayFrequency } from "@/lib/constants/employment-constants"
+import type { TaxCalculationInput, TaxCalculationResult } from "@/lib/payroll/types"
+import type { IPayroll } from "@/models/payroll"
+import type { IEmployeeAddress } from "@/models/employee"
+import type { LeanDoc } from "@/types/db"
+import type { PayrollRecord } from "@/types/payroll"
 
 export async function createPayrollRecordCore(
   userId: string,
@@ -23,11 +38,11 @@ export async function createPayrollRecordCore(
   // 1. Look up company by userId (service layer pattern)
   const company = await Company.findOne({ userId })
   if (!company) {
-    throw new Error("Company not found.")
+    throw new Error(COMPANY_ERRORS.NOT_FOUND)
   }
 
   if (!company.currentStateRate) {
-    throw new Error("Company is missing state tax rates.")
+    throw new Error(PAYROLL_ERRORS.MISSING_STATE_RATES)
   }
 
   // 2. Find the employee
@@ -36,7 +51,7 @@ export async function createPayrollRecordCore(
     companyId: company._id,
   })
   if (!employee) {
-    throw new Error("Employee not found.")
+    throw new Error(EMPLOYEE_ERRORS.NOT_FOUND)
   }
 
   // 3. Parse and validate dates (MM-DD-YYYY from URL params)
@@ -45,11 +60,11 @@ export async function createPayrollRecordCore(
   const payDateObj = parseDateParam(payDate)
 
   if (!startDateObj || !endDateObj || !payDateObj) {
-    throw new Error("Invalid date format. Expected MM-DD-YYYY.")
+    throw new Error(PAYROLL_ERRORS.INVALID_DATE_FORMAT)
   }
 
-  if (payDateObj < endDateObj) {
-    throw new Error("Pay date cannot be before period end date.")
+  if (payDateObj < startDateObj) {
+    throw new Error(PAYROLL_ERRORS.PAY_DATE_BEFORE_START)
   }
 
   // 4. Check for existing exact match payroll record
@@ -78,12 +93,12 @@ export async function createPayrollRecordCore(
   })
 
   if (overlapping) {
-    throw new Error("Pay period overlaps with an existing record.")
+    throw new Error(PAYROLL_ERRORS.OVERLAPPING_PERIOD)
   }
 
   // 6. Calculate hours and gross pay
   const payFrequency = company.payFrequency
-  const { salary, payType, workingHours } = employee.currentCompensation
+  const { salary, workingHours } = employee.currentCompensation
 
   const totalHours =
     hours !== undefined
@@ -98,6 +113,7 @@ export async function createPayrollRecordCore(
 
   // 7. Calculate YTD and taxes
   const ytdResult = await getPayrollYTDCore(userId, employeeId, startDate)
+  const taxRates = getTaxRates(startDateObj)
   const taxResult = calculatePayrollTaxesCore({
     grossPay,
     periodType: payFrequency,
@@ -106,103 +122,36 @@ export async function createPayrollRecordCore(
     stateTax: employee.currentStateTax,
     companyRates: company.currentStateRate,
     taxExemptions: employee.taxExemptions,
+    taxRates,
   })
 
   // 8. Create payroll record with denormalized snapshots
-  const payrollRecord = new Payroll({
-    companyId: company._id,
-    employeeId: employee._id,
-    employeeInfo: {
-      firstName: employee.firstName,
-      lastName: employee.lastName,
-      middleName: employee.middleName,
-      ssn: employee.ssn,
-      email: employee.email,
-    },
-    payPeriod: {
-      periodType: payFrequency,
-      startDate: startDateObj,
-      endDate: endDateObj,
-      payDate: payDateObj,
-    },
-    hoursWorked: {
-      regularHours: totalHours,
-      overtimeHours: 0,
-      doubleTimeHours: 0,
-      sickHours: 0,
-      vacationHours: 0,
-      holidayHours: 0,
-      totalHours: totalHours,
-    },
-    compensation: {
-      payType: payType,
-      payRate: salary,
-      workingHours: workingHours,
-    },
-    payMethod: employee.currentPayMethod.payMethod,
-    federalW4: employee.currentFederalW4
-      ? {
-          formVersion: employee.currentFederalW4.formVersion,
-          filingStatus: employee.currentFederalW4.filingStatus,
-          multipleJobsOrSpouseWorks:
-            employee.currentFederalW4.multipleJobsOrSpouseWorks,
-          claimedDependentsDeduction:
-            employee.currentFederalW4.claimedDependentsDeduction,
-          otherIncome: employee.currentFederalW4.otherIncome,
-          deductions: employee.currentFederalW4.deductions,
-          extraWithholding: employee.currentFederalW4.extraWithholding,
-          effectiveDate: employee.currentFederalW4.effectiveDate,
-        }
-      : undefined,
-    californiaDE4: employee.currentStateTax?.californiaDE4
-      ? {
-          filingStatus: employee.currentStateTax.californiaDE4.filingStatus,
-          worksheetA: employee.currentStateTax.californiaDE4.worksheetA,
-          worksheetB: employee.currentStateTax.californiaDE4.worksheetB,
-          additionalWithholding:
-            employee.currentStateTax.californiaDE4.additionalWithholding,
-          exempt: employee.currentStateTax.californiaDE4.exempt,
-          wagesPlanCode: employee.currentStateTax.californiaDE4.wagesPlanCode,
-          effectiveDate: employee.currentStateTax.californiaDE4.effectiveDate,
-        }
-      : undefined,
-    taxExemptions: {
-      futa: employee.taxExemptions?.futa || false,
-      fica: employee.taxExemptions?.fica || false,
-      suiEtt: employee.taxExemptions?.suiEtt || false,
-      sdi: employee.taxExemptions?.sdi || false,
-    },
-    earnings: {
-      regularPay: grossPay,
-      overtimePay: 0,
-      bonusPay: 0,
-      commissionPay: 0,
-      otherPay: 0,
-      totalGrossPay: grossPay,
-    },
-    deductions: {
-      preTax: {
-        retirement401k: 0,
-        healthInsurance: 0,
-        dentalInsurance: 0,
-        visionInsurance: 0,
-        hsaFsa: 0,
-        other: 0,
-        total: 0,
+  const payrollRecord = new Payroll(
+    buildPayrollRecord({
+      companyId: company._id.toString(),
+      employee,
+      payPeriod: {
+        periodType: payFrequency,
+        startDate: startDateObj,
+        endDate: endDateObj,
+        payDate: payDateObj,
       },
-      taxes: taxResult.employeeTaxes,
-      postTax: {
-        garnishments: 0,
-        unionDues: 0,
-        charitableDonations: 0,
-        other: 0,
-        total: 0,
+      hoursWorked: {
+        regularHours: totalHours,
+        overtimeHours: 0,
+        totalHours,
       },
-    },
-    employerTaxes: taxResult.employerTaxes,
-    netPay: taxResult.netPay,
-    approvalStatus: "pending",
-  })
+      earnings: {
+        regularPay: grossPay,
+        overtimePay: 0,
+        bonusPay: 0,
+        commissionPay: 0,
+        otherPay: 0,
+        totalGrossPay: grossPay,
+      },
+      taxResult,
+    }),
+  )
 
   await payrollRecord.save()
 
@@ -210,4 +159,215 @@ export async function createPayrollRecordCore(
     payrollId: payrollRecord._id.toString(),
     employeeId: employee._id.toString(),
   }
+}
+
+
+/**
+ * Calculate payroll taxes for an employee given gross pay and period info.
+ * Used by the payroll form for real-time tax recalculation.
+ */
+export async function calculatePayrollTaxesForEmployeeCore(
+  userId: string,
+  employeeId: string,
+  grossPay: number,
+  periodType: PayFrequency,
+  payPeriodStartDate: string,
+): Promise<TaxCalculationResult> {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId })
+    .select("currentStateRate")
+    .lean<{ _id: string; currentStateRate: typeof Company.prototype.currentStateRate }>()
+
+  if (!company?.currentStateRate) {
+    throw new Error(PAYROLL_ERRORS.MISSING_STATE_RATES)
+  }
+
+  const employee = await Employee.findOne({
+    _id: employeeId,
+    companyId: company._id,
+  })
+    .select("currentFederalW4 currentStateTax taxExemptions")
+    .lean<{
+      currentFederalW4?: InstanceType<typeof Employee>["currentFederalW4"]
+      currentStateTax?: InstanceType<typeof Employee>["currentStateTax"]
+      taxExemptions?: InstanceType<typeof Employee>["taxExemptions"]
+    }>()
+
+  if (!employee) {
+    throw new Error(EMPLOYEE_ERRORS.NOT_FOUND)
+  }
+
+  const startDateParam = formatDateParam(new Date(payPeriodStartDate))
+  const ytd = await getPayrollYTDCore(userId, employeeId, startDateParam)
+  const taxRates = getTaxRates(payPeriodStartDate)
+
+  return calculatePayrollTaxesCore({
+    grossPay,
+    periodType,
+    ytdGrossPay: ytd.salary.totalGrossPay,
+    federalW4: employee.currentFederalW4,
+    stateTax: employee.currentStateTax,
+    companyRates: company.currentStateRate,
+    taxExemptions: employee.taxExemptions,
+    taxRates,
+  })
+}
+
+
+/**
+ * Get payroll record by ID core logic
+ */
+export async function getPayrollRecordByIdCore(
+  userId: string,
+  payrollId: string
+): Promise<PayrollRecord & { paySchedule: PayFrequency }> {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId }).select(
+    "currentStateRate.UIRate currentStateRate.ETTRate payFrequency"
+  )
+  if (!company) {
+    throw new Error(COMPANY_ERRORS.NOT_FOUND)
+  }
+
+  const payrollRecord = await Payroll.findById(payrollId)
+    .select("-employeeInfo.ssn -employeeInfo.email -approvalInfo")
+    .lean<LeanDoc<IPayroll>>()
+
+  if (!payrollRecord) {
+    throw new Error(PAYROLL_ERRORS.NOT_FOUND)
+  }
+
+  if (company._id.toString() !== payrollRecord.companyId.toString()) {
+    throw new Error(PAYROLL_ERRORS.ACCESS_DENIED)
+  }
+
+  const employee = (await Employee.findById(payrollRecord.employeeId)
+    .select("address")
+    .lean()) as { address: IEmployeeAddress } | null
+
+  const defaultAddress: IEmployeeAddress = {
+    street1: "",
+    city: "",
+    state: "",
+    zipCode: "",
+  }
+
+  const serialized = JSON.parse(JSON.stringify(payrollRecord))
+
+  return {
+    ...serialized,
+    address: employee?.address || defaultAddress,
+    companyRates: {
+      uiRate: company.currentStateRate?.UIRate || 0.034,
+      ettRate: company.currentStateRate?.ETTRate || 0.001,
+    },
+    paySchedule: company.payFrequency,
+  } as PayrollRecord & { paySchedule: PayFrequency }
+}
+
+
+
+
+/**
+ * Update payroll record with server-side tax validation.
+ * Fetches YTD internally and recalculates taxes to prevent tampering.
+ */
+export async function updatePayrollRecordCore(
+  userId: string,
+  payrollId: string,
+  updateData: {
+    hoursWorked: {
+      regularHours: number
+      overtimeHours: number
+      totalHours: number
+    }
+    earnings: PayrollRecord["earnings"]
+    deductions: {
+      taxes: PayrollRecord["deductions"]["taxes"]
+    }
+    employerTaxes: PayrollRecord["employerTaxes"]
+    netPay: number
+  }
+): Promise<void> {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId })
+  if (!company) {
+    throw new Error(COMPANY_ERRORS.NOT_FOUND)
+  }
+
+  if (!company.currentStateRate) {
+    throw new Error(PAYROLL_ERRORS.MISSING_STATE_RATES)
+  }
+
+  const payrollRecord = await Payroll.findOne({
+    _id: payrollId,
+    companyId: company._id,
+  })
+  if (!payrollRecord) {
+    throw new Error(PAYROLL_ERRORS.NOT_FOUND)
+  }
+
+  if (payrollRecord.approvalStatus === "approved") {
+    throw new Error(PAYROLL_ERRORS.CANNOT_MODIFY_APPROVED)
+  }
+
+  // Fetch YTD for accurate tax recalculation
+  const startDateParam = formatDateParam(payrollRecord.payPeriod.startDate)
+  const ytdResult = await getPayrollYTDCore(
+    userId,
+    payrollRecord.employeeId.toString(),
+    startDateParam,
+  )
+
+  // Server-side tax recalculation
+  // Snapshot types lack submittedDate (metadata-only), safe to cast
+  const serverCalculated = calculatePayrollTaxesCore({
+    grossPay: updateData.earnings.totalGrossPay,
+    periodType: payrollRecord.payPeriod.periodType as PayFrequency,
+    ytdGrossPay: ytdResult.salary.totalGrossPay,
+    federalW4: payrollRecord.federalW4 as TaxCalculationInput["federalW4"],
+    stateTax: (payrollRecord.californiaDE4
+      ? {
+          state: "CA" as const,
+          californiaDE4: payrollRecord.californiaDE4,
+          effectiveDate: payrollRecord.californiaDE4.effectiveDate,
+        }
+      : undefined) as TaxCalculationInput["stateTax"],
+    companyRates: company.currentStateRate,
+    taxExemptions: payrollRecord.taxExemptions,
+    taxRates: getTaxRates(payrollRecord.payPeriod.startDate),
+  })
+
+  // Validate frontend-submitted taxes against server calculation
+  const tolerance = 0.01
+  const employeeTaxDiff = Math.abs(
+    updateData.deductions.taxes.total - serverCalculated.employeeTaxes.total
+  )
+  const employerTaxDiff = Math.abs(
+    updateData.employerTaxes.total - serverCalculated.employerTaxes.total
+  )
+  const netPayDiff = Math.abs(updateData.netPay - serverCalculated.netPay)
+
+  if (
+    employeeTaxDiff > tolerance ||
+    employerTaxDiff > tolerance ||
+    netPayDiff > tolerance
+  ) {
+    throw new Error(PAYROLL_ERRORS.TAX_CALCULATION_MISMATCH)
+  }
+
+  // Update with server-calculated tax values (ignore client-submitted taxes)
+  await Payroll.findByIdAndUpdate(payrollId, {
+    "hoursWorked.regularHours": updateData.hoursWorked.regularHours,
+    "hoursWorked.overtimeHours": updateData.hoursWorked.overtimeHours,
+    "hoursWorked.totalHours": updateData.hoursWorked.totalHours,
+    earnings: updateData.earnings,
+    "deductions.taxes": serverCalculated.employeeTaxes,
+    employerTaxes: serverCalculated.employerTaxes,
+    netPay: serverCalculated.netPay,
+    updatedAt: new Date(),
+  })
 }
