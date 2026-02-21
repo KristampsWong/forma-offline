@@ -1,6 +1,5 @@
 import type {
   EmploymentStatus,
-  PayMethod,
   PayType,
 } from "@/lib/constants/employment-constants"
 import type { ICompensation } from "@/models/employee"
@@ -14,7 +13,6 @@ export interface EmployeeStub {
     payType: PayType
     workingHours: number
   }
-  currentPayMethod: PayMethod
   employmentStatus: EmploymentStatus
   hireDate: Date
   terminationDate?: Date

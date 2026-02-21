@@ -65,7 +65,6 @@ export async function getPayrollTableDataCore(
       firstName: 1,
       lastName: 1,
       currentCompensation: 1,
-      currentPayMethod: 1,
       employmentStatus: 1,
       hireDate: 1,
       terminationDate: 1,
