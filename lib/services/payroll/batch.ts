@@ -274,7 +274,7 @@ export async function approvePayrollRecordsCore(
   }
 
   if (!payrollIds || payrollIds.length === 0) {
-    throw new Error("No payroll records specified.")
+    throw new Error(PAYROLL_ERRORS.NO_RECORDS_SPECIFIED)
   }
 
   const result = await Payroll.updateMany(
@@ -288,6 +288,7 @@ export async function approvePayrollRecordsCore(
         approvalStatus: "approved",
         "approvalInfo.approvedBy": userId,
         "approvalInfo.approvedAt": new Date(),
+        updatedAt: new Date(),
       },
     },
   )
@@ -308,7 +309,7 @@ export async function approvePayrollRecordsCore(
       }
     }
 
-    throw new Error("No pending payroll records found to approve.")
+    throw new Error(PAYROLL_ERRORS.NO_PENDING_RECORDS)
   }
 
   // Get end date for tax sync

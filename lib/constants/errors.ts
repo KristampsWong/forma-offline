@@ -76,6 +76,8 @@ export const PAYROLL_ERRORS = {
   INVALID_DATE_FORMAT: "Invalid date format. Expected MM-DD-YYYY",
   PAY_DATE_BEFORE_START: "Pay date cannot be before period start date",
   TAX_CALCULATION_MISMATCH: "Tax calculation mismatch. Please refresh the page and try again",
+  NO_RECORDS_SPECIFIED: "No payroll records specified",
+  NO_PENDING_RECORDS: "No pending payroll records found to approve",
 } as const
 
 /**

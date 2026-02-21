@@ -190,7 +190,7 @@ export default async function Page({
       </div>
       <div className="flex justify-end gap-4">
         <Link
-          href={`/payroll?periodType=${previewData[0].payFrequency}&start=${startDate}&end=${endDate}`}
+          href={`/payroll?start=${startDate}&end=${endDate}`}
           className={buttonVariants({ variant: "outline" })}
         >
           Back to Edit

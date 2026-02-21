@@ -7,6 +7,7 @@
  *  5. getEmployeePayrollDetailsCore  (planned)
  */
 import dbConnect from "@/lib/db/dbConnect"
+import { COMPANY_ERRORS, PAYROLL_ERRORS } from "@/lib/constants/errors"
 import type { PayFrequency } from "@/lib/constants/employment-constants"
 import Company from "@/models/company"
 import Employee from "@/models/employee"
@@ -36,7 +37,7 @@ export async function getPayrollTableDataCore(
 
   const company = await Company.findOne({ userId }).select("_id payFrequency")
   if (!company) {
-    throw new Error("Company not found.")
+    throw new Error(COMPANY_ERRORS.NOT_FOUND)
   }
 
   const payType: PayFrequency = company.payFrequency
@@ -45,7 +46,7 @@ export async function getPayrollTableDataCore(
   const endDateParsed = parseDateParam(endDate)
 
   if (!startDateParsed || !endDateParsed) {
-    throw new Error("Invalid date format. Expected MM-DD-YYYY.")
+    throw new Error(PAYROLL_ERRORS.INVALID_DATE_FORMAT)
   }
 
   // Eligible: hired on or before period end, not terminated before period start
@@ -159,14 +160,14 @@ export async function getPreviewPayrollCore(
 
   const company = await Company.findOne({ userId }).select("_id")
   if (!company) {
-    throw new Error("Company not found.")
+    throw new Error(COMPANY_ERRORS.NOT_FOUND)
   }
 
   const startDateParsed = parseDateParam(startDate)
   const endDateParsed = parseDateParam(endDate)
 
   if (!startDateParsed || !endDateParsed) {
-    throw new Error("Invalid date format. Expected MM-DD-YYYY.")
+    throw new Error(PAYROLL_ERRORS.INVALID_DATE_FORMAT)
   }
 
   const displayStart = startDate.replace(/-/g, "/")
