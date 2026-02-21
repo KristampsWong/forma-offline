@@ -113,7 +113,6 @@ export default function PayrollForm({
       try {
         const result = await calculatePayrollTaxes({
           employeeId: payrollRecord.employeeId,
-          companyId: payrollRecord.companyId,
           grossPay: currentTotal,
           periodType: payrollRecord.payPeriod.periodType as PayFrequency,
           payPeriodStartDate: payrollRecord.payPeriod.startDate,
@@ -121,18 +120,21 @@ export default function PayrollForm({
 
         // Only apply the latest response (prevent stale data)
         if (currentRequestId === calculationCounterRef.current) {
+          if (!result.success) {
+            toast.error(result.error)
+            return
+          }
           setTaxResults({
-            employeeTaxes: result.employeeTaxes,
-            employerTaxes: result.employerTaxes,
-            netPay: result.netPay,
+            employeeTaxes: result.data.employeeTaxes,
+            employerTaxes: result.data.employerTaxes,
+            netPay: result.data.netPay,
           })
         }
       } catch (error) {
         if (error instanceof Error && error.name !== "AbortError") {
           console.error("Tax calculation error:", error)
           toast.error(
-            error.message ||
-              "Error calculating taxes. Please refresh and try again.",
+            "Error calculating taxes. Please refresh and try again.",
           )
         }
       } finally {
@@ -149,7 +151,6 @@ export default function PayrollForm({
   }, [
     currentTotal,
     payrollRecord.employeeId,
-    payrollRecord.companyId,
     payrollRecord.payPeriod.periodType,
     payrollRecord.payPeriod.startDate,
   ])

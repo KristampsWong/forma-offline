@@ -19,7 +19,7 @@ import { COMPANY_ERRORS, EMPLOYEE_ERRORS, PAYROLL_ERRORS } from "@/lib/constants
 import { getPayrollYTDCore } from "@/lib/services/payroll/reporting"
 import { buildPayrollRecord } from "@/lib/services/payroll/builders"
 import type { PayFrequency } from "@/lib/constants/employment-constants"
-import type { TaxCalculationInput } from "@/lib/payroll/types"
+import type { TaxCalculationInput, TaxCalculationResult } from "@/lib/payroll/types"
 import type { IPayroll } from "@/models/payroll"
 import type { IEmployeeAddress } from "@/models/employee"
 import type { LeanDoc } from "@/types/db"
@@ -159,6 +159,59 @@ export async function createPayrollRecordCore(
     payrollId: payrollRecord._id.toString(),
     employeeId: employee._id.toString(),
   }
+}
+
+
+/**
+ * Calculate payroll taxes for an employee given gross pay and period info.
+ * Used by the payroll form for real-time tax recalculation.
+ */
+export async function calculatePayrollTaxesForEmployeeCore(
+  userId: string,
+  employeeId: string,
+  grossPay: number,
+  periodType: PayFrequency,
+  payPeriodStartDate: string,
+): Promise<TaxCalculationResult> {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId })
+    .select("currentStateRate")
+    .lean<{ _id: string; currentStateRate: typeof Company.prototype.currentStateRate }>()
+
+  if (!company?.currentStateRate) {
+    throw new Error(PAYROLL_ERRORS.MISSING_STATE_RATES)
+  }
+
+  const employee = await Employee.findOne({
+    _id: employeeId,
+    companyId: company._id,
+  })
+    .select("currentFederalW4 currentStateTax taxExemptions")
+    .lean<{
+      currentFederalW4?: InstanceType<typeof Employee>["currentFederalW4"]
+      currentStateTax?: InstanceType<typeof Employee>["currentStateTax"]
+      taxExemptions?: InstanceType<typeof Employee>["taxExemptions"]
+    }>()
+
+  if (!employee) {
+    throw new Error(EMPLOYEE_ERRORS.NOT_FOUND)
+  }
+
+  const startDateParam = formatDateParam(new Date(payPeriodStartDate))
+  const ytd = await getPayrollYTDCore(userId, employeeId, startDateParam)
+  const taxRates = getTaxRates(payPeriodStartDate)
+
+  return calculatePayrollTaxesCore({
+    grossPay,
+    periodType,
+    ytdGrossPay: ytd.salary.totalGrossPay,
+    federalW4: employee.currentFederalW4,
+    stateTax: employee.currentStateTax,
+    companyRates: company.currentStateRate,
+    taxExemptions: employee.taxExemptions,
+    taxRates,
+  })
 }
 
 

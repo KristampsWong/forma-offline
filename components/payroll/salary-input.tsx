@@ -87,7 +87,6 @@ export default function SalaryInput({
                 <span className="">{formatAmount(regularHours)}</span>
               ) : (
                 <AmountInput
-                  prefix="$"
                   value={regularHours}
                   className="w-24"
                   onChange={setRegularHours}
@@ -111,7 +110,6 @@ export default function SalaryInput({
                 <span className="">{formatAmount(overtimeHours)}</span>
               ) : (
                 <AmountInput
-                  prefix="$"
                   className="w-24"
                   value={overtimeHours}
                   onChange={setOvertimeHours}
