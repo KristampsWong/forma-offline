@@ -23,8 +23,8 @@ export default async function Page({
 }: {
   searchParams: Promise<{ [key: string]: string }>
 }) {
-  const { startDate, endDate } = await searchParams
-  if (!startDate || !endDate) {
+  const { startDate, endDate, payDate } = await searchParams
+  if (!startDate || !endDate || !payDate) {
     return redirect(`/payroll`)
   }
   const result = await getPreviewPayroll(startDate, endDate)
@@ -190,7 +190,7 @@ export default async function Page({
       </div>
       <div className="flex justify-end gap-4">
         <Link
-          href={`/payroll?start=${startDate}&end=${endDate}`}
+          href={`/payroll?start=${startDate}&end=${endDate}&payDate=${payDate}`}
           className={buttonVariants({ variant: "outline" })}
         >
           Back to Edit

@@ -26,7 +26,7 @@ export function formatAmount(
   format: AmountFormat = "number",
 ): string {
   const num = Number(String(amount).replace(/,/g, ""))
-  if (!Number.isFinite(num)) return amount.toString()
+  if (!Number.isFinite(num)) return String(amount)
 
   return num.toLocaleString("en-US", {
     ...(format === "currency"

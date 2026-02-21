@@ -64,11 +64,9 @@ export async function getPayrollTableDataCore(
       _id: 1,
       firstName: 1,
       lastName: 1,
-      currentSalary: 1,
-      payType: 1,
+      currentCompensation: 1,
       currentPayMethod: 1,
       employmentStatus: 1,
-      currentWorkingHours: 1,
       hireDate: 1,
       terminationDate: 1,
       compensationHistory: 1,
@@ -120,10 +118,10 @@ export async function getPayrollTableDataCore(
         return eff <= endDateParsed && (end === null || end >= endDateParsed)
       })
 
-      const salary = effective?.salary ?? emp.currentSalary
-      const empPayType = effective?.payType ?? emp.payType
+      const salary = effective?.salary ?? emp.currentCompensation.salary
+      const empPayType = effective?.payType ?? emp.currentCompensation.payType
       const workingHours =
-        effective?.workingHours ?? emp.currentWorkingHours ?? 40
+        effective?.workingHours ?? emp.currentCompensation.workingHours ?? 40
 
       const payrollData = calculatePayrollForEmployee({
         employeeId: empId,

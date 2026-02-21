@@ -9,11 +9,13 @@ export interface EmployeeStub {
   _id: string
   firstName: string
   lastName: string
-  currentSalary: number
-  payType: PayType
+  currentCompensation: {
+    salary: number
+    payType: PayType
+    workingHours: number
+  }
   currentPayMethod: PayMethod
   employmentStatus: EmploymentStatus
-  currentWorkingHours: number
   hireDate: Date
   terminationDate?: Date
   compensationHistory: ICompensation[]
