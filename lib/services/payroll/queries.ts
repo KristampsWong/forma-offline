@@ -121,7 +121,7 @@ export async function getPayrollTableDataCore(
       const salary = effective?.salary ?? emp.currentCompensation.salary
       const empPayType = effective?.payType ?? emp.currentCompensation.payType
       const workingHours =
-        effective?.workingHours ?? emp.currentCompensation.workingHours ?? 40
+        effective?.workingHours || emp.currentCompensation.workingHours || 40
 
       const payrollData = calculatePayrollForEmployee({
         employeeId: empId,
