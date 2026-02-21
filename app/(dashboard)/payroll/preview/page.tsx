@@ -27,13 +27,9 @@ export default async function Page({
   if (!startDate || !endDate) {
     return redirect(`/payroll`)
   }
-  // getPreviewPayroll uses currentUser() internally for tenant isolation
-  const previewResult = await getPreviewPayroll(startDate, endDate)
+  const result = await getPreviewPayroll(startDate, endDate)
 
-  const hasZeroHourEmployees =
-    previewResult.data &&
-    previewResult.data.some((employee) => employee.totalHours === 0)
-  if (!previewResult.success || !previewResult.data) {
+  if (!result.success) {
     return (
       <main className="p-4 max-w-7xl mx-auto space-y-8 w-full">
         <Header>
@@ -46,18 +42,22 @@ export default async function Page({
           </Breadcrumb>
         </Header>
         <div className="text-center text-muted-foreground">
-          Error loading payroll preview:{" "}
-          {previewResult.error || "Unknown error"}
+          Error loading payroll preview: {result.error || "Unknown error"}
         </div>
       </main>
     )
   }
+
+  const { data: previewData, overview } = result.data
+  const hasZeroHourEmployees = previewData.some(
+    (employee) => employee.totalHours === 0,
+  )
   const {
     totalPayrollCost,
     totalGrossPay,
     totalEmployerTaxesAndContributions,
     totalNetPay,
-  } = previewResult.overview
+  } = overview
   return (
     <main className="p-4 max-w-7xl mx-auto space-y-8 w-full">
       <Header>
@@ -98,11 +98,11 @@ export default async function Page({
           <CardHeader>
             <div className="text-sm font-medium  flex justify-between">
               <span className="text-muted-foreground">Pay period:</span>
-              <span>{`${previewResult.overview.payPeriodStart} - ${previewResult.overview.payPeriodEnd}`}</span>
+              <span>{`${overview.payPeriodStart} - ${overview.payPeriodEnd}`}</span>
             </div>
             <div className="text-sm font-medium flex justify-between">
               <span className="text-muted-foreground ">Pay date: </span>
-              <span>{previewResult.overview.payDate}</span>
+              <span>{overview.payDate}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">
@@ -143,8 +143,8 @@ export default async function Page({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {previewResult.data.length > 0 ? (
-              previewResult.data.map((employee) => (
+            {previewData.length > 0 ? (
+              previewData.map((employee) => (
                 <TableRow
                   key={employee.employeeId}
                   className="cursor-pointer tracking-wide h-14"
@@ -190,13 +190,13 @@ export default async function Page({
       </div>
       <div className="flex justify-end gap-4">
         <Link
-          href={`/payroll?periodType=${previewResult.data[0].payFrequency}&start=${startDate}&end=${endDate}`}
+          href={`/payroll?periodType=${previewData[0].payFrequency}&start=${startDate}&end=${endDate}`}
           className={buttonVariants({ variant: "outline" })}
         >
           Back to Edit
         </Link>
         <SubmitPayrollButton
-          payrollIds={previewResult.data.map((employee) => employee.payrollId)}
+          payrollIds={previewData.map((employee) => employee.payrollId)}
           redirectDate={startDate}
           hasZeroHourEmployees={hasZeroHourEmployees}
         />
