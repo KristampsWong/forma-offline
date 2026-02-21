@@ -111,18 +111,23 @@ export async function createOrUpdateDe9cFormData(
     await De9c.findOneAndUpdate(
       { companyId: company._id, year, quarter: quarterStr },
       {
-        companyId: company._id,
-        year,
-        quarter: quarterStr,
-        headerData,
-        companyInfo,
-        employees: calcResult.employees,
-        employeeCounts: calcResult.employeeCounts,
-        grandTotals: calcResult.grandTotals,
-        payrollIds,
-        computedAt: new Date(),
+        $set: {
+          headerData,
+          companyInfo,
+          employees: calcResult.employees,
+          employeeCounts: calcResult.employeeCounts,
+          grandTotals: calcResult.grandTotals,
+          payrollIds,
+          computedAt: new Date(),
+        },
+        $setOnInsert: {
+          companyId: company._id,
+          year,
+          quarter: quarterStr,
+          status: "computed",
+        },
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true },
+      { upsert: true, new: true },
     )
 
     return { success: true }

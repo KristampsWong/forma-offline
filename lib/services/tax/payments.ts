@@ -278,10 +278,22 @@ export async function syncAllTaxPaymentsFromApprovedPayrolls(
     const federal940RequiresImmediate = requiresImmediateMap[quarter] ?? false
     const federal940TotalTax = quarterlyTaxData.federal940.futaEmployer
 
-    const federal940Payment = await Federal940Payment.findOneAndUpdate(
-      { companyId: companyId, quarter, year },
-      {
-        $set: {
+    // Skip financial field updates if the record is already paid
+    const existing940Record = existing940Payments.find(
+      (p) => p.quarter === quarter,
+    )
+    const is940Paid = existing940Record?.status === "paid"
+
+    const federal940SetFields: Record<string, unknown> = is940Paid
+      ? {
+          // Only update non-financial fields for paid records
+          payrollIds: quarterlyTaxData.payrollIds,
+          periodStart: quarterStart,
+          periodEnd: quarterEnd,
+          dueDate: federal940DueDate,
+          requiresImmediatePayment: federal940RequiresImmediate,
+        }
+      : {
           futaEmployer: quarterlyTaxData.federal940.futaEmployer,
           totalTax: federal940TotalTax,
           payrollIds: quarterlyTaxData.payrollIds,
@@ -289,7 +301,12 @@ export async function syncAllTaxPaymentsFromApprovedPayrolls(
           periodEnd: quarterEnd,
           dueDate: federal940DueDate,
           requiresImmediatePayment: federal940RequiresImmediate,
-        },
+        }
+
+    const federal940Payment = await Federal940Payment.findOneAndUpdate(
+      { companyId: companyId, quarter, year },
+      {
+        $set: federal940SetFields,
         $setOnInsert: {
           companyId: companyId,
           quarter,

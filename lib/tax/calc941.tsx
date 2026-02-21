@@ -184,12 +184,12 @@ export function getMonthlyLiabilitiesForQuarter(
 
   // Find the earliest month in the quarter
   const dates = payrolls.map((p) => p.payDate)
-  const minMonth = Math.min(...dates.map((d) => d.getMonth())) // 0–11
+  const minMonth = Math.min(...dates.map((d) => d.getUTCMonth())) // 0–11
 
   const sums = [0, 0, 0] // month1, month2, month3
 
   for (const p of payrolls) {
-    const idx = p.payDate.getMonth() - minMonth // 0, 1, 2 for the 3 months in this quarter
+    const idx = p.payDate.getUTCMonth() - minMonth // 0, 1, 2 for the 3 months in this quarter
     if (idx >= 0 && idx < 3) {
       sums[idx] += computeDailyLiability(p)
     }

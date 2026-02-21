@@ -210,49 +210,6 @@ export function calculateQuarterlyLiability(
 }
 
 /**
- * Determine if FUTA payment requires immediate deposit
- * Used for calculating requiresImmediatePayment flag for Federal940Payment
- *
- * Rule: If accumulated FUTA tax at end of quarter exceeds $500,
- * deposit is due by the last day of the month following the quarter
- *
- * @param payments Array of quarterly FUTA payment records
- * @returns Map of quarter to requiresImmediatePayment status
- */
-export function calculateFederal940RequiresImmediate(
-  payments: { quarter: string; futaOwed: number; amountPaid: number }[],
-): Record<string, boolean> {
-  const result: Record<string, boolean> = {}
-  let accumulated = 0
-
-  // Sort by quarter
-  const sorted = [...payments].sort((a, b) => {
-    const qOrder = { Q1: 1, Q2: 2, Q3: 3, Q4: 4 }
-    return (
-      (qOrder[a.quarter as keyof typeof qOrder] || 0) -
-      (qOrder[b.quarter as keyof typeof qOrder] || 0)
-    )
-  })
-
-  for (const payment of sorted) {
-    // Add current quarter's liability
-    accumulated += payment.futaOwed - payment.amountPaid
-
-    // Check if deposit is required (exceeds $500 threshold)
-    const requiresImmediate = accumulated > FUTA_QUARTERLY_DEPOSIT_THRESHOLD
-
-    result[payment.quarter] = requiresImmediate
-
-    // If a deposit was made, reset accumulation
-    if (payment.amountPaid > 0) {
-      accumulated = Math.max(0, accumulated)
-    }
-  }
-
-  return result
-}
-
-/**
  * Main Form 940 calculation function
  * Calculates all lines of Form 940 based on annual payroll data
  */

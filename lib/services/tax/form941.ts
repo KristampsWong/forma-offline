@@ -329,9 +329,17 @@ export async function createOrUpdateForm941FromApprovedPayrolls(
       .sort({ periodStart: 1 })
       .lean()
 
-    const month1 = federal941Records[0]?.totalTax || 0
-    const month2 = federal941Records[1]?.totalTax || 0
-    const month3 = federal941Records[2]?.totalTax || 0
+    // Map deposits by month using periodStart, not positional index
+    const quarterStartMonth = quarterStartDate.getUTCMonth()
+    const depositByMonth = [0, 0, 0] // [month1, month2, month3]
+    for (const rec of federal941Records) {
+      const recMonth = new Date(rec.periodStart).getUTCMonth()
+      const idx = recMonth - quarterStartMonth
+      if (idx >= 0 && idx < 3) {
+        depositByMonth[idx] = rec.totalTax || 0
+      }
+    }
+    const [month1, month2, month3] = depositByMonth
 
     // 5. Run calc941
     const calc941Result: Calc941Result = calc941(
