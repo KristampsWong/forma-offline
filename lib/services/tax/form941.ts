@@ -436,3 +436,84 @@ export async function createOrUpdateForm941FromApprovedPayrolls(
     }
   }
 }
+
+// ============================================================================
+// Read queries
+// ============================================================================
+
+/**
+ * Get all Form 941 filings for a company, sorted by year desc then quarter.
+ */
+export async function getAllForm941FilingsCore(userId: string) {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId }).select("_id")
+  if (!company) throw new Error(COMPANY_ERRORS.NOT_FOUND)
+
+  const records = await Form941.find({ companyId: company._id })
+    .select(
+      "quarter year periodStart periodEnd dueDate filingStatus filedDate balanceDue",
+    )
+    .sort({ year: -1, quarter: 1 })
+    .lean()
+
+  return records.map((r) => ({
+    _id: r._id.toString(),
+    quarter: r.quarter,
+    year: r.year,
+    periodStart: r.periodStart.toISOString(),
+    periodEnd: r.periodEnd.toISOString(),
+    dueDate: r.dueDate.toISOString(),
+    filingStatus: r.filingStatus,
+    filedDate: r.filedDate?.toISOString(),
+    balanceDue: r.balanceDue,
+  }))
+}
+
+/**
+ * Get paginated filed filing records across all form types (941, 940, DE9, DE9C).
+ */
+export async function getFiledFilingRecordsCore(
+  userId: string,
+  page: number,
+  pageSize: number,
+) {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId }).select("_id")
+  if (!company) throw new Error(COMPANY_ERRORS.NOT_FOUND)
+
+  const filter = { companyId: company._id, filingStatus: "filed" }
+  const skip = (page - 1) * pageSize
+
+  const [records, total] = await Promise.all([
+    Form941.find(filter)
+      .select(
+        "quarter year periodStart periodEnd dueDate filingStatus filedDate balanceDue",
+      )
+      .sort({ filedDate: -1 })
+      .skip(skip)
+      .limit(pageSize)
+      .lean(),
+    Form941.countDocuments(filter),
+  ])
+
+  return {
+    records: records.map((r) => ({
+      _id: r._id.toString(),
+      formType: "941" as const,
+      quarter: r.quarter,
+      year: r.year,
+      periodStart: r.periodStart.toISOString(),
+      periodEnd: r.periodEnd.toISOString(),
+      dueDate: r.dueDate.toISOString(),
+      filingStatus: r.filingStatus,
+      filedDate: r.filedDate?.toISOString(),
+      amount: r.balanceDue,
+    })),
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+  }
+}

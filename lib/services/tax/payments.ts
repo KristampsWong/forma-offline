@@ -460,6 +460,170 @@ export async function recalculateFederal940RequiresImmediatePayment(
 }
 
 // ============================================================================
+// Tax payment read queries
+// ============================================================================
+
+/**
+ * Get all tax payment records for a company, grouped by payment type.
+ * Returns serialized records for the tax payments tab.
+ */
+export async function getAllTaxPaymentsCore(userId: string) {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId }).select("_id")
+  if (!company) throw new Error(COMPANY_ERRORS.NOT_FOUND)
+
+  const filter = { companyId: company._id }
+
+  const [fed941, fed940, caPit, caSui] = await Promise.all([
+    Federal941Payment.find(filter).sort({ periodStart: -1 }).lean(),
+    Federal940Payment.find(filter).sort({ year: -1, quarter: 1 }).lean(),
+    CAPitSdiPayment.find(filter).sort({ periodStart: -1 }).lean(),
+    CASuiEttPayment.find(filter).sort({ year: -1, quarter: 1 }).lean(),
+  ])
+
+  return {
+    federal941: fed941.map((r) => ({
+      _id: r._id.toString(),
+      periodStart: r.periodStart,
+      periodEnd: r.periodEnd,
+      quarter: r.quarter,
+      year: r.year,
+      federalIncomeTax: r.federalIncomeTax,
+      socialSecurityTax: r.socialSecurityTax,
+      socialSecurityEmployerTax: r.socialSecurityEmployerTax,
+      medicareTax: r.medicareTax,
+      medicareEmployerTax: r.medicareEmployerTax,
+      totalTax: r.totalTax,
+      dueDate: r.dueDate,
+      status: r.status as "pending" | "paid",
+      paidDate: r.paidDate,
+      requiresImmediatePayment: r.requiresImmediatePayment,
+    })),
+    federal940: fed940.map((r) => ({
+      _id: r._id.toString(),
+      periodStart: r.periodStart,
+      periodEnd: r.periodEnd,
+      quarter: r.quarter,
+      year: r.year,
+      futaEmployer: r.futaEmployer,
+      totalTax: r.totalTax,
+      dueDate: r.dueDate,
+      status: r.status as "pending" | "paid",
+      paidDate: r.paidDate,
+      requiresImmediatePayment: r.requiresImmediatePayment,
+    })),
+    caPitSdi: caPit.map((r) => ({
+      _id: r._id.toString(),
+      periodStart: r.periodStart,
+      periodEnd: r.periodEnd,
+      quarter: r.quarter,
+      year: r.year,
+      caIncomeTax: r.caIncomeTax,
+      caStateDisabilityIns: r.caStateDisabilityIns,
+      totalTax: r.totalTax,
+      dueDate: r.dueDate,
+      status: r.status as "pending" | "paid",
+      paidDate: r.paidDate,
+    })),
+    caSuiEtt: caSui.map((r) => ({
+      _id: r._id.toString(),
+      periodStart: r.periodStart,
+      periodEnd: r.periodEnd,
+      quarter: r.quarter,
+      year: r.year,
+      caSuiEmployer: r.caSuiEmployer,
+      caEtt: r.caEtt,
+      totalTax: r.totalTax,
+      dueDate: r.dueDate,
+      status: r.status as "pending" | "paid",
+      paidDate: r.paidDate,
+    })),
+  }
+}
+
+/**
+ * Get paginated paid payment records across all 4 payment types.
+ */
+export async function getPaidPaymentRecordsCore(
+  userId: string,
+  page: number,
+  pageSize: number,
+) {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId }).select("_id")
+  if (!company) throw new Error(COMPANY_ERRORS.NOT_FOUND)
+
+  const filter = { companyId: company._id, status: "paid" as const }
+
+  const [fed941, fed940, caPit, caSui] = await Promise.all([
+    Federal941Payment.find(filter)
+      .select("periodStart periodEnd totalTax dueDate paidDate status quarter year")
+      .sort({ paidDate: -1 })
+      .lean(),
+    Federal940Payment.find(filter)
+      .select("periodStart periodEnd totalTax dueDate paidDate status quarter year")
+      .sort({ paidDate: -1 })
+      .lean(),
+    CAPitSdiPayment.find(filter)
+      .select("periodStart periodEnd totalTax dueDate paidDate status quarter year")
+      .sort({ paidDate: -1 })
+      .lean(),
+    CASuiEttPayment.find(filter)
+      .select("periodStart periodEnd totalTax dueDate paidDate status quarter year")
+      .sort({ paidDate: -1 })
+      .lean(),
+  ])
+
+  const allRecords = [
+    ...fed941.map((r) => ({
+      _id: r._id.toString(),
+      taxType: "federal941" as const,
+      totalTax: r.totalTax,
+      paidDate: r.paidDate?.toISOString(),
+      dueDate: r.dueDate.toISOString(),
+    })),
+    ...fed940.map((r) => ({
+      _id: r._id.toString(),
+      taxType: "federal940" as const,
+      totalTax: r.totalTax,
+      paidDate: r.paidDate?.toISOString(),
+      dueDate: r.dueDate.toISOString(),
+    })),
+    ...caPit.map((r) => ({
+      _id: r._id.toString(),
+      taxType: "caPitSdi" as const,
+      totalTax: r.totalTax,
+      paidDate: r.paidDate?.toISOString(),
+      dueDate: r.dueDate.toISOString(),
+    })),
+    ...caSui.map((r) => ({
+      _id: r._id.toString(),
+      taxType: "caSuiEtt" as const,
+      totalTax: r.totalTax,
+      paidDate: r.paidDate?.toISOString(),
+      dueDate: r.dueDate.toISOString(),
+    })),
+  ].sort((a, b) => {
+    if (!a.paidDate || !b.paidDate) return 0
+    return new Date(b.paidDate).getTime() - new Date(a.paidDate).getTime()
+  })
+
+  const total = allRecords.length
+  const start = (page - 1) * pageSize
+  const paged = allRecords.slice(start, start + pageSize)
+
+  return {
+    records: paged,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+  }
+}
+
+// ============================================================================
 // Tax deadline queries
 // ============================================================================
 

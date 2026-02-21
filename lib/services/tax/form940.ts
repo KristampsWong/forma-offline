@@ -337,3 +337,35 @@ export async function createOrUpdateForm940FromApprovedPayrolls(
     }
   }
 }
+
+// ============================================================================
+// Read queries
+// ============================================================================
+
+/**
+ * Get all Form 940 filings for a company, sorted by year desc.
+ */
+export async function getAllForm940FilingsCore(userId: string) {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId }).select("_id")
+  if (!company) throw new Error(COMPANY_ERRORS.NOT_FOUND)
+
+  const records = await Form940.find({ companyId: company._id })
+    .select(
+      "year periodStart periodEnd dueDate filingStatus filedDate line14_balanceDue",
+    )
+    .sort({ year: -1 })
+    .lean()
+
+  return records.map((r) => ({
+    _id: r._id.toString(),
+    year: r.year,
+    periodStart: r.periodStart.toISOString(),
+    periodEnd: r.periodEnd.toISOString(),
+    dueDate: r.dueDate.toISOString(),
+    filingStatus: r.filingStatus,
+    filedDate: r.filedDate?.toISOString(),
+    line14_balanceDue: r.line14_balanceDue,
+  }))
+}
