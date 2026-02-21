@@ -111,29 +111,20 @@ export async function approvePayrollRecords(payrollIds: string[]) {
         createOrUpdateDe9cFormData(userId, result.endDate.getUTCFullYear(), quarterNumber),
       ])
 
+      const taxSyncErrors: string[] = []
+      if (!taxPayments.success) taxSyncErrors.push("Tax Payments")
+      if (!form941.success) taxSyncErrors.push("Form 941")
+      if (!form940.success) taxSyncErrors.push("Form 940")
+      if (!de9.success) taxSyncErrors.push("DE 9")
+      if (!de9c.success) taxSyncErrors.push("DE 9C")
+
       return {
         ...result,
-        taxSyncStatus: {
-          taxPayments: taxPayments.success
-            ? { success: true as const }
-            : { success: false as const, error: taxPayments.error },
-          form941: form941.success
-            ? { success: true as const }
-            : { success: false as const, error: form941.error },
-          form940: form940.success
-            ? { success: true as const }
-            : { success: false as const, error: form940.error },
-          de9: de9.success
-            ? { success: true as const }
-            : { success: false as const, error: de9.error },
-          de9c: de9c.success
-            ? { success: true as const }
-            : { success: false as const, error: de9c.error },
-        },
+        taxSyncErrors,
       }
     }
 
-    return result
+    return { ...result, taxSyncErrors: [] as string[] }
   })
 }
 

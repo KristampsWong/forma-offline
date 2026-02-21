@@ -45,6 +45,14 @@ No test framework is configured yet. Test mode infrastructure exists via `isTest
 **Tax calculations** (`lib/payroll/`):
 - Pure calculation functions — no DB access. Federal withholding, CA state taxes, FICA, FUTA, SDI.
 - `calculatePayrollTaxesCore` is the single source of truth for all tax calculations.
+- Tax rates are year-based: call `getTaxRates(date)` from `lib/constants/tax-rates/` — never use module-level `getTaxRates(new Date())`. Always pass the payroll period date.
+
+**Tax form services** (`lib/services/tax/` → `lib/tax/`):
+- Service layer (`lib/services/tax/`) handles DB operations: fetch payrolls, upsert form records, query payments.
+- Calc modules (`lib/tax/calc-*.ts`) are pure functions — no DB access. Each mirrors its service: `calc-de9.ts`, `calc-de9c.ts`, `calc941.tsx`, `calc940.tsx`.
+- `lib/tax/deadlines.ts` — quarter date ranges, filing deadlines, due dates.
+- Tax syncs run in parallel after payroll approval via `actions/payroll.ts` `approvePayrollRecords`.
+- Forms: Federal Form 941 (quarterly), Form 940 (annual FUTA), CA DE 9 (quarterly contributions), CA DE 9C (employee wage detail).
 
 **Auth helpers** (`lib/auth/auth-helpers.ts`):
 - `getCurrentUser()` — React `cache`-wrapped, safe to call multiple times per request
@@ -64,6 +72,10 @@ No test framework is configured yet. Test mode infrastructure exists via `isTest
 
 **Environment** (`lib/env.ts`):
 - Always use `isDevelopment()`, `isProduction()`, `isTestMode()`, `isBuildTime()` — never read `process.env.NODE_ENV` directly
+
+**Logging** (`lib/logger.ts`):
+- Always use `logger` from `lib/logger.ts` — never use `console.log/warn/error` directly.
+- `createModuleLogger(name)` for prefixed logging in specific modules.
 
 **Error constants** (`lib/constants/errors.ts`):
 - Centralized error messages grouped by domain (AUTH, COMPANY, EMPLOYEE, STATE_RATE, GENERIC)
