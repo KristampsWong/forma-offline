@@ -24,6 +24,7 @@ import {
   calculate15thDueDate,
   calculateQuarterlyDueDate,
 } from "@/lib/tax/deadlines"
+import { getMonthDateRange } from "@/lib/date/utils"
 import { COMPANY_ERRORS } from "@/lib/constants/errors"
 
 // ===== Tax Thresholds =====
@@ -32,22 +33,6 @@ import { COMPANY_ERRORS } from "@/lib/constants/errors"
 const FEDERAL_941_THRESHOLD = 2500
 // 940: If accumulated FUTA exceeds $500, requires quarterly deposit
 const FEDERAL_940_THRESHOLD = 500
-
-// ===== Helpers =====
-
-/**
- * Get calendar month date range (UTC)
- * Tax deposits are per calendar month, not per payroll period
- */
-function getMonthDateRange(date: Date): { start: Date; end: Date } {
-  const year = date.getUTCFullYear()
-  const month = date.getUTCMonth()
-
-  const start = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0))
-  const end = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999))
-
-  return { start, end }
-}
 
 /**
  * Calculate Federal 940 accumulated FUTA and requiresImmediatePayment per quarter.
