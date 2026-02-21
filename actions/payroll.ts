@@ -15,6 +15,7 @@ import {
   getPreviewPayrollCore,
 } from "@/lib/services/payroll/queries"
 import { getPayrollYTDCore } from "@/lib/services/payroll/reporting"
+import { syncAllTaxPaymentsFromApprovedPayrolls } from "@/lib/services/tax/payments"
 import type { PayrollRecord } from "@/types/payroll"
 
 /**
@@ -85,11 +86,23 @@ export async function getPreviewPayroll(startDate: string, endDate: string) {
 
 /**
  * Approve payroll records (change status from pending to approved)
+ * After approval, syncs tax payment records from the approved payrolls.
  */
 export async function approvePayrollRecords(payrollIds: string[]) {
-  return withAuth((userId) =>
-    approvePayrollRecordsCore(userId, payrollIds),
-  )
+  return withAuth(async (userId) => {
+    const result = await approvePayrollRecordsCore(userId, payrollIds)
+
+    // Sync tax payments if we have an end date
+    if (result.endDate) {
+      const taxSync = await syncAllTaxPaymentsFromApprovedPayrolls(
+        userId,
+        result.endDate,
+      )
+      return { ...result, taxSyncResult: taxSync }
+    }
+
+    return result
+  })
 }
 
 export async function batchCreateDefaultPayrollRecords(
