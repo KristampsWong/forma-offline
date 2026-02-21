@@ -41,6 +41,12 @@ export function SubmitPayrollButton({
         } else {
           toast.success("Payroll records approved successfully.")
         }
+
+        if (result.data.taxSyncErrors && result.data.taxSyncErrors.length > 0) {
+          toast.warning(
+            `Tax sync failed for: ${result.data.taxSyncErrors.join(", ")}. Please check the tax forms page.`,
+          )
+        }
         // redirectDate is MM-DD-YYYY format (URL param)
         const [month, , year] = redirectDate.split("-")
         router.push(`/overview?month=${month}&year=${year}`)
