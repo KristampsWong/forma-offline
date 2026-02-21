@@ -41,8 +41,8 @@ export default function PayrollEmployeeList({
       window.location.hash = "#settings/state-rates"
     }
   }, [hasEddAccount])
-  const [hoursMap, setHoursMap] = useState<Record<string, string>>(() =>
-    Object.fromEntries(data.map((e) => [e.id, e.hours ? String(e.hours) : ""])),
+  const [hoursMap, setHoursMap] = useState<Record<string, number>>(() =>
+    Object.fromEntries(data.map((e) => [e.id, e.hours || 0])),
   )
   const [grossPayMap, setGrossPayMap] = useState<Record<string, number>>(() =>
     Object.fromEntries(data.map((e) => [e.id, e.grossPay])),
@@ -58,7 +58,7 @@ export default function PayrollEmployeeList({
   const hasHoursChanged = useMemo(
     () =>
       data.some((row) => {
-        const current = parseFloat(hoursMap[row.id] ?? "") || 0
+        const current = hoursMap[row.id] ?? 0
         return current !== row.hours
       }),
     [data, hoursMap],
@@ -68,8 +68,7 @@ export default function PayrollEmployeeList({
   const getChangedEmployeeHours = (): Record<string, number> => {
     const changed: Record<string, number> = {}
     data.forEach((row) => {
-      const currentHours =
-        parseFloat(hoursMap[row.id] ?? row.hours.toString()) || 0
+      const currentHours = hoursMap[row.id] ?? row.hours
       if (currentHours !== row.hours) {
         changed[row.id] = currentHours
       }
@@ -81,9 +80,7 @@ export default function PayrollEmployeeList({
   const getAllEmployeeHours = (): Record<string, number> => {
     const all: Record<string, number> = {}
     data.forEach((row) => {
-      const currentHours =
-        parseFloat(hoursMap[row.id] ?? row.hours.toString()) || 0
-      all[row.id] = currentHours
+      all[row.id] = hoursMap[row.id] ?? row.hours
     })
     return all
   }
@@ -152,18 +149,15 @@ export default function PayrollEmployeeList({
                 </TableCell>
                 <TableCell className="font-medium text-start">
                   <AmountInput
-                    prefix=""
-                    suffix="hrs"
-                    value={hoursMap[employee.id] ?? ""}
-                    placeholder="0.00"
+                    suffix="/hr"
+                    value={hoursMap[employee.id] ?? 0}
                     className="w-24"
                     onChange={(value) => {
                       setHoursMap((prev) => ({ ...prev, [employee.id]: value }))
-                      const newHours = Number(value) || 0
                       setGrossPayMap((prev) => ({
                         ...prev,
                         [employee.id]: RoundingToCents(
-                          employee.regularPay * newHours,
+                          employee.regularPay * value,
                         ),
                       }))
                     }}
@@ -192,7 +186,7 @@ export default function PayrollEmployeeList({
                           startDate,
                           endDate,
                           payDate,
-                          parseFloat(hoursMap[employee.id]) || 0,
+                          hoursMap[employee.id] || 0,
                         )
 
                         if (!res.success) {

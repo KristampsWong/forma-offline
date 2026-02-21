@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react"
-import { Input } from "@/components/ui/input"
+import { AmountInput } from "@/components/ui/amount-input"
 import {
   Table,
   TableBody,
@@ -86,11 +86,11 @@ export default function SalaryInput({
               {readOnly ? (
                 <span className="">{formatAmount(regularHours)}</span>
               ) : (
-                <Input
-                  type="string"
+                <AmountInput
+                  prefix="$"
                   value={regularHours}
                   className="w-24"
-                  onChange={(e) => setRegularHours(Number(e.target.value) || 0)}
+                  onChange={setRegularHours}
                 />
               )}
             </TableCell>
@@ -110,13 +110,11 @@ export default function SalaryInput({
               {readOnly ? (
                 <span className="">{formatAmount(overtimeHours)}</span>
               ) : (
-                <Input
-                  type="string"
+                <AmountInput
+                  prefix="$"
                   className="w-24"
                   value={overtimeHours}
-                  onChange={(e) =>
-                    setOvertimeHours(Number(e.target.value) || 0)
-                  }
+                  onChange={setOvertimeHours}
                 />
               )}
             </TableCell>
@@ -126,17 +124,12 @@ export default function SalaryInput({
                   {formatAmount(overtimePayRate, "currency")}
                 </span>
               ) : (
-                <>
-                  <span>$ </span>
-                  <Input
-                    type="string"
-                    className="w-24"
-                    value={overtimePayRate}
-                    onChange={(e) =>
-                      setOvertimePayRate(Number(e.target.value) || 0)
-                    }
-                  />
-                </>
+                <AmountInput
+                  prefix="$"
+                  value={overtimePayRate}
+                  className="w-24"
+                  onChange={setOvertimePayRate}
+                />
               )}
             </TableCell>
 
@@ -155,15 +148,12 @@ export default function SalaryInput({
                   {formatAmount(commission, "currency")}
                 </span>
               ) : (
-                <>
-                  <span>$ </span>
-                  <Input
-                    type="string"
-                    value={commission}
-                    className="w-24"
-                    onChange={(e) => setCommission(Number(e.target.value) || 0)}
-                  />
-                </>
+                <AmountInput
+                  prefix="$"
+                  value={commission}
+                  className="w-24"
+                  onChange={setCommission}
+                />
               )}
             </TableCell>
             <TableCell className="text-end tracking-wide">
@@ -179,15 +169,12 @@ export default function SalaryInput({
                   {formatAmount(otherPay, "currency")}
                 </span>
               ) : (
-                <>
-                  <span>$ </span>
-                  <Input
-                    type="string"
-                    value={otherPay}
-                    className="w-24"
-                    onChange={(e) => setOtherPay(Number(e.target.value) || 0)}
-                  />
-                </>
+                <AmountInput
+                  prefix="$"
+                  value={otherPay}
+                  className="w-24"
+                  onChange={setOtherPay}
+                />
               )}
             </TableCell>
             <TableCell className="text-end">
