@@ -1,10 +1,10 @@
-import { getAllDe9Records } from "@/actions/taxes/de9-read"
-import { getAllDe9cRecords } from "@/actions/taxes/de9c-read"
 import {
+  getAllDe9Records,
+  getAllDe9cRecords,
   getAllForm940Filings,
   getAllForm941Filings,
-} from "@/actions/taxes/filling-read"
-import { getAllTaxPayments } from "@/actions/taxes/taxes-read"
+  getAllTaxPayments,
+} from "@/actions/taxes"
 import Header from "@/components/header"
 import TaxFilingsTab from "@/components/taxes/tax-filings-tab"
 import TaxPaymentsTab from "@/components/taxes/tax-payments-tab"

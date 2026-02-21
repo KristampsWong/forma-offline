@@ -1,4 +1,4 @@
-import { getPaidPaymentRecords } from "@/actions/taxes/taxes-read"
+import { getPaidPaymentRecords } from "@/actions/taxes"
 import Header from "@/components/header"
 //import PaymentRecordsTable from "@/components/taxes/payment-records/payment-records-table"
 import Breadcrumb, {

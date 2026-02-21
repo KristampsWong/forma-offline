@@ -1,10 +1,10 @@
 import Link from "next/link"
-import type { De9RecordList } from "@/actions/taxes/de9-read"
-import type { De9cRecordList } from "@/actions/taxes/de9c-read"
 import type {
+  De9RecordList,
+  De9cRecordList,
   Form940FilingRecord,
   Form941FilingRecord,
-} from "@/actions/taxes/filling-read"
+} from "@/actions/taxes"
 import TaxFilingCard from "@/components/taxes/tax-filing-card"
 import TaxSectionHeader from "@/components/taxes/tax-section-header"
 import { Card } from "@/components/ui/card"

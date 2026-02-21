@@ -1,4 +1,4 @@
-import { getFiledFilingRecords } from "@/actions/taxes/filling-read"
+import { getFiledFilingRecords } from "@/actions/taxes"
 import Header from "@/components/header"
 //import FilingRecordsTable from "@/components/taxes/filing-records/filing-records-table"
 import Breadcrumb, {
