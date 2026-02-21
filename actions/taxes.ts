@@ -90,6 +90,10 @@ export async function getAllForm940Filings() {
   return withAuth((userId) => getAllForm940FilingsCore(userId))
 }
 
+export type FilingRecordItem = Awaited<
+  ReturnType<typeof getFiledFilingRecordsCore>
+>["records"][number]
+
 export async function getFiledFilingRecords(
   page: number,
   pageSize: number,
@@ -138,6 +142,10 @@ export async function markTaxPaymentAsPaid(
 export async function getAllTaxPayments() {
   return withAuth((userId) => getAllTaxPaymentsCore(userId))
 }
+
+export type PaymentRecordItem = Awaited<
+  ReturnType<typeof getPaidPaymentRecordsCore>
+>["records"][number]
 
 export async function getPaidPaymentRecords(
   page: number,

@@ -305,17 +305,48 @@ export default function PayrollActivities({
   const nextDisabled = !table.getCanNextPage()
 
   return (
-    <Card className="w-full col-span-2">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Payroll Activities</span>
-          <PayrollMonthPicker month={month} year={year} />
-        </CardTitle>
+    <div className="w-full">
+      <div className="flex items-center justify-between py-4">
+        <div className="flex items-center gap-2 max-w-sm w-full">
+        <Input
+          placeholder="Filter by name..."
+          value={
+            (table.getColumn("employeeName")?.getFilterValue() as string) ?? ""
+          }
+          onChange={(event) =>
+            table.getColumn("employeeName")?.setFilterValue(event.target.value)
+          }
+        
+        />
 
-        <CardDescription className="flex items-center justify-between">
-          <span>
-            Recent payroll records for {monthName} {year}
-          </span>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="ml-auto">
+              Columns <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {table
+              .getAllColumns()
+              .filter((column) => column.getCanHide())
+              .map((column) => {
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) =>
+                      column.toggleVisibility(!!value)
+                    }
+                  >
+                    {column.id}
+                  </DropdownMenuCheckboxItem>
+                )
+              })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        </div>
+        <div className="flex items-center gap-4">
           <div className="flex gap-2 text-muted-foreground font-medium">
             {[
               {
@@ -347,181 +378,113 @@ export default function PayrollActivities({
               </Tooltip>
             ))}
           </div>
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {activities.length > 0 ? (
-          <div className="w-full">
-            <div className="flex items-center justify-between py-4">
-              <Input
-                placeholder="Filter by name..."
-                value={
-                  (table
-                    .getColumn("employeeName")
-                    ?.getFilterValue() as string) ?? ""
-                }
-                onChange={(event) =>
-                  table
-                    .getColumn("employeeName")
-                    ?.setFilterValue(event.target.value)
-                }
-                className="max-w-sm"
-              />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="ml-auto">
-                    Columns <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {table
-                    .getAllColumns()
-                    .filter((column) => column.getCanHide())
-                    .map((column) => {
-                      return (
-                        <DropdownMenuCheckboxItem
-                          key={column.id}
-                          className="capitalize"
-                          checked={column.getIsVisible()}
-                          onCheckedChange={(value) =>
-                            column.toggleVisibility(!!value)
-                          }
-                        >
-                          {column.id}
-                        </DropdownMenuCheckboxItem>
-                      )
-                    })}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className="overflow-hidden rounded-md border">
-              <Table>
-                <TableHeader>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => {
-                        return (
-                          <TableHead key={header.id}>
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext(),
-                                )}
-                          </TableHead>
-                        )
-                      })}
-                    </TableRow>
-                  ))}
-                </TableHeader>
-                <TableBody>
-                  {table.getRowModel().rows?.length ? (
-                    table.getRowModel().rows.map((row) => (
-                      <TableRow key={row.id}>
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id} className="py-4">
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext(),
-                            )}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell
-                        colSpan={columns.length}
-                        className="h-24 text-center"
-                      >
-                        No results.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-            <div className="flex items-center justify-between gap-3 py-4">
-              <div className="text-muted-foreground text-sm whitespace-nowrap">
-                {table.getFilteredRowModel().rows.length} row(s) total.
-              </div>
-
-              <Pagination className="justify-end">
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      href="#"
-                      aria-disabled={prevDisabled}
-                      className={
-                        prevDisabled
-                          ? "pointer-events-none opacity-50"
-                          : undefined
-                      }
-                      onClick={(event) => {
-                        event.preventDefault()
-                        if (!prevDisabled) table.previousPage()
-                      }}
-                    />
-                  </PaginationItem>
-
-                  {pageItems.map((item, index) => (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: keep it
-                    <PaginationItem key={`${item}-${index}`}>
-                      {item === "ellipsis" ? (
-                        <PaginationEllipsis />
-                      ) : (
-                        <PaginationLink
-                          href="#"
-                          isActive={item === currentPage}
-                          onClick={(event) => {
-                            event.preventDefault()
-                            table.setPageIndex(item - 1)
-                          }}
-                        >
-                          {item}
-                        </PaginationLink>
+          <PayrollMonthPicker month={month} year={year} />
+        </div>
+      </div>
+      <div className="overflow-hidden rounded-md border">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  return (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                    </TableHead>
+                  )
+                })}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id} className="py-4">
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
                       )}
-                    </PaginationItem>
+                    </TableCell>
                   ))}
-
-                  <PaginationItem>
-                    <PaginationNext
-                      href="#"
-                      aria-disabled={nextDisabled}
-                      className={
-                        nextDisabled
-                          ? "pointer-events-none opacity-50"
-                          : undefined
-                      }
-                      onClick={(event) => {
-                        event.preventDefault()
-                        if (!nextDisabled) table.nextPage()
-                      }}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-baseline text-sm">
-            <p className="text-muted-foreground mr-1">
-              {stats.hasEmployee
-                ? "No payroll records for this month approved yet."
-                : "Haven't added any employees yet."}
-            </p>
-            {stats.hasEmployee ? (
-              <Link href={url} className="underline">
-                Run Payroll?
-              </Link>
+                </TableRow>
+              ))
             ) : (
-              <Link href="/employees" className="underline">
-                Add Employees?
-              </Link>
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
+                  No results.
+                </TableCell>
+              </TableRow>
             )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          </TableBody>
+        </Table>
+      </div>
+      <div className="flex items-center justify-between gap-3 py-4">
+        <div className="text-muted-foreground text-sm whitespace-nowrap">
+          {table.getFilteredRowModel().rows.length} row(s) total.
+        </div>
+
+        <Pagination className="justify-end">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href="#"
+                aria-disabled={prevDisabled}
+                className={
+                  prevDisabled ? "pointer-events-none opacity-50" : undefined
+                }
+                onClick={(event) => {
+                  event.preventDefault()
+                  if (!prevDisabled) table.previousPage()
+                }}
+              />
+            </PaginationItem>
+
+            {pageItems.map((item, index) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: keep it
+              <PaginationItem key={`${item}-${index}`}>
+                {item === "ellipsis" ? (
+                  <PaginationEllipsis />
+                ) : (
+                  <PaginationLink
+                    href="#"
+                    isActive={item === currentPage}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      table.setPageIndex(item - 1)
+                    }}
+                  >
+                    {item}
+                  </PaginationLink>
+                )}
+              </PaginationItem>
+            ))}
+
+            <PaginationItem>
+              <PaginationNext
+                href="#"
+                aria-disabled={nextDisabled}
+                className={
+                  nextDisabled ? "pointer-events-none opacity-50" : undefined
+                }
+                onClick={(event) => {
+                  event.preventDefault()
+                  if (!nextDisabled) table.nextPage()
+                }}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </div>
+    </div>
   )
 }

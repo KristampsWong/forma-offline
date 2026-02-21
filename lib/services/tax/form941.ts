@@ -502,6 +502,7 @@ export async function getFiledFilingRecordsCore(
     records: records.map((r) => ({
       _id: r._id.toString(),
       formType: "941" as const,
+      title: "Form 941",
       quarter: r.quarter,
       year: r.year,
       periodStart: r.periodStart.toISOString(),

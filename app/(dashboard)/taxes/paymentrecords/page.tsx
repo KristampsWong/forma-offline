@@ -1,6 +1,6 @@
 import { getPaidPaymentRecords } from "@/actions/taxes"
 import Header from "@/components/header"
-//import PaymentRecordsTable from "@/components/taxes/payment-records/payment-records-table"
+import PaymentRecordsTable from "@/components/taxes/payment-records-table"
 import Breadcrumb, {
   BreadcrumbLink,
   BreadcrumbSeparator,
@@ -30,7 +30,7 @@ export default async function Page() {
         </Breadcrumb>
       </Header>
 
-      {/* <PaymentRecordsTable initialData={initialData} /> */}
+      <PaymentRecordsTable initialData={initialData} />
     </main>
   )
 }

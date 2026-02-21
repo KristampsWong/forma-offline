@@ -1,6 +1,6 @@
 import { getFiledFilingRecords } from "@/actions/taxes"
 import Header from "@/components/header"
-//import FilingRecordsTable from "@/components/taxes/filing-records/filing-records-table"
+import FilingRecordsTable from "@/components/taxes/filing-records-table"
 import Breadcrumb, {
   BreadcrumbLink,
   BreadcrumbSeparator,
@@ -30,7 +30,7 @@ export default async function Page() {
         </Breadcrumb>
       </Header>
 
-      {/* <FilingRecordsTable initialData={initialData} /> */}
+      <FilingRecordsTable initialData={initialData} />
     </main>
   )
 }

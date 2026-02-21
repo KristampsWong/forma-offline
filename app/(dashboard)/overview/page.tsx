@@ -65,14 +65,7 @@ export default async function Page({
   ]
   return (
     <main className="p-4 max-w-7xl mx-auto space-y-8 w-full">
-      <Header>
-        <h1 className="text-2xl font-semibold">
-          Welcome back, {user.name}{" "}
-          <span role="img" aria-label="waving hand">
-            👋🏻
-          </span>
-        </h1>
-      </Header>
+      <Header title="Overview"></Header>
       <section className="space-y-4 w-full">
         <div className="grid grid-cols-4 gap-4 ">
           {ytdsummary.map((item) => (
@@ -89,7 +82,7 @@ export default async function Page({
             </Card>
           ))}
         </div>
-         <PayrollActivities data={payrollData} month={month} year={year} />
+        <PayrollActivities data={payrollData} month={month} year={year} />
       </section>
     </main>
   )
