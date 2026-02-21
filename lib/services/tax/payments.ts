@@ -458,3 +458,68 @@ export async function recalculateFederal940RequiresImmediatePayment(
     }
   }
 }
+
+// ============================================================================
+// Tax deadline queries
+// ============================================================================
+
+export interface TaxDeadline {
+  type: string
+  amount: number
+  dueDate: string
+  status: string
+}
+
+/**
+ * Get all unpaid (pending) tax payment deadlines across all 4 payment types.
+ * Returns sorted by due date ascending.
+ */
+export async function getUnpaidTaxDeadlinesCore(
+  userId: string,
+): Promise<TaxDeadline[]> {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId }).select("_id")
+  if (!company) throw new Error("Company not found.")
+
+  const filter = { companyId: company._id, status: "pending" as const }
+  const projection = "totalTax dueDate status"
+
+  const [fed941, fed940, caPit, caSui] = await Promise.all([
+    Federal941Payment.find(filter).select(projection).sort({ dueDate: 1 }).lean(),
+    Federal940Payment.find(filter).select(projection).sort({ dueDate: 1 }).lean(),
+    CAPitSdiPayment.find(filter).select(projection).sort({ dueDate: 1 }).lean(),
+    CASuiEttPayment.find(filter).select(projection).sort({ dueDate: 1 }).lean(),
+  ])
+
+  const deadlines: TaxDeadline[] = [
+    ...fed941.map((p) => ({
+      type: "Federal 941",
+      amount: p.totalTax,
+      dueDate: p.dueDate.toISOString(),
+      status: p.status,
+    })),
+    ...fed940.map((p) => ({
+      type: "Federal 940 (FUTA)",
+      amount: p.totalTax,
+      dueDate: p.dueDate.toISOString(),
+      status: p.status,
+    })),
+    ...caPit.map((p) => ({
+      type: "CA PIT/SDI",
+      amount: p.totalTax,
+      dueDate: p.dueDate.toISOString(),
+      status: p.status,
+    })),
+    ...caSui.map((p) => ({
+      type: "CA SUI/ETT",
+      amount: p.totalTax,
+      dueDate: p.dueDate.toISOString(),
+      status: p.status,
+    })),
+  ]
+
+  return deadlines.sort(
+    (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
+  )
+}
