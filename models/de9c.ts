@@ -1,5 +1,6 @@
 import mongoose, { Document, Model, Types } from "mongoose"
 
+import type { De9cStatus } from "@/lib/constants/tax-constants"
 import { QUARTERS, type Quarter } from "@/types/quarter"
 
 /**
@@ -12,8 +13,6 @@ import { QUARTERS, type Quarter } from "@/types/quarter"
  */
 
 // --- Types ---
-
-export type De9cStatus = "computed" | "filed"
 
 export interface IDe9cEmployee {
   ssn: string

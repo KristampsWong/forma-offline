@@ -1,10 +1,10 @@
 import { getEmployeeById } from "@/actions/employee"
-// import { getEmployeePayrolls } from "@/actions/payroll"
+import { getEmployeePayrolls } from "@/actions/payroll"
 import Avatar from "@/components/avatar"
-// import Documents from "@/components/employee/documents"
-// import { EmployeeActionMenu } from "@/components/employee/employee-action-menu"
+import Documents from "@/components/employee/documents"
+import { EmployeeActionMenu } from "@/components/employee/employee-action-menu"
 import EmployeeProfileList from "@/components/employee/employee-profile-list"
-// import PaycheckList from "@/components/employee/paycheck-list"
+import PaycheckList from "@/components/employee/paycheck-list"
 import Header from "@/components/header"
 import Breadcrumb, {
   BreadcrumbLink,
@@ -44,11 +44,10 @@ export default async function Page({
   }
 
   const employee = result.employee
-  // getEmployeePayrolls uses currentUser() internally for tenant isolation
-  // const payrollsResult = await getEmployeePayrolls(id)
-  // const paychecks =
-  //   payrollsResult.success && payrollsResult.data ? payrollsResult.data : []
-  // const hasPayrolls = paychecks.length > 0
+  const payrollsResult = await getEmployeePayrolls(id)
+  const paychecks =
+    payrollsResult.success && payrollsResult.data ? payrollsResult.data : []
+  const hasPayrolls = paychecks.length > 0
   const fullName = `${employee.firstName} ${employee.lastName}`
 
   return (
@@ -70,11 +69,11 @@ export default async function Page({
             <span className="capitalize">{employee.employmentStatus}</span>
           </div>
         </div>
-        {/* <EmployeeActionMenu
+        <EmployeeActionMenu
           hasPayrolls={hasPayrolls}
           fullName={fullName}
-          employeeId={employee._id.toString()}
-        /> */}
+          employeeId={employee.id}
+        />
       </div>
 
       <TabNav
@@ -100,15 +99,15 @@ export default async function Page({
 
       <div>
         {activeTab === "profile" && <EmployeeProfileList employee={employee} />}
-        {/* {activeTab === "paychecklist" && (
+        {activeTab === "paychecklist" && (
           <PaycheckList paycheckList={paychecks} />
         )}
         {activeTab === "documents" && (
           <Documents
             employeeName={employee.firstName}
-            employeeId={employee._id.toString()}
+            employeeId={employee.id}
           />
-        )} */}
+        )}
       </div>
     </main>
   )

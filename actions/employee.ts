@@ -24,6 +24,7 @@ import {
 } from "@/lib/validation"
 import Company from "@/models/company"
 import Employee, { type EmployeeDocument } from "@/models/employee"
+import Payroll from "@/models/payroll"
 import type { EmployeeDetail, EmployeeListItem } from "@/types/employee"
 
 // ============================================================
@@ -733,5 +734,46 @@ export async function updateEmployeeCompensation(
   }
 
   revalidatePath(`/employees/${employeeId}`)
+  return { success: true }
+}
+
+// ============================================================
+// Delete
+// ============================================================
+
+export async function deleteEmployee(
+  employeeId: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const { user } = await requireAuth()
+
+  await dbConnect()
+
+  const company = await Company.findOne({ userId: user.id })
+  if (!company) {
+    return { success: false, error: COMPANY_ERRORS.NOT_FOUND }
+  }
+
+  // Prevent deletion if employee has payroll records
+  const hasPayrolls = await Payroll.exists({
+    employeeId,
+    companyId: company._id,
+  })
+  if (hasPayrolls) {
+    return {
+      success: false,
+      error: "Cannot delete an employee with payroll records. Terminate them instead.",
+    }
+  }
+
+  const result = await Employee.findOneAndDelete({
+    _id: employeeId,
+    companyId: company._id,
+  })
+
+  if (!result) {
+    return { success: false, error: EMPLOYEE_ERRORS.NOT_FOUND }
+  }
+
+  revalidatePath("/employees")
   return { success: true }
 }

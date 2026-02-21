@@ -1,5 +1,6 @@
 import mongoose, { Document, Model, Types } from "mongoose"
 
+import type { Form941FilingStatus } from "@/lib/constants/tax-constants"
 import { QUARTERS, type Quarter } from "@/types/quarter"
 
 /**
@@ -12,8 +13,6 @@ import { QUARTERS, type Quarter } from "@/types/quarter"
  */
 
 // --- Types ---
-
-export type Form941FilingStatus = "draft" | "ready_to_file" | "filed" | "amended"
 
 export interface IMonthlyTaxLiability {
   month1: number

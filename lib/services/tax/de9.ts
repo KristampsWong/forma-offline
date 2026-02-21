@@ -211,3 +211,32 @@ export async function createOrUpdateDe9FormData(
     }
   }
 }
+
+// ============================================================================
+// Read queries
+// ============================================================================
+
+/**
+ * Get all DE 9 records for a company, sorted by year desc then quarter.
+ */
+export async function getAllDe9RecordsCore(userId: string) {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId }).select("_id")
+  if (!company) throw new Error(COMPANY_ERRORS.NOT_FOUND)
+
+  const records = await De9.find({ companyId: company._id })
+    .select("year quarter headerData.due formData.totalDue status filedAt")
+    .sort({ year: -1, quarter: 1 })
+    .lean()
+
+  return records.map((r) => ({
+    _id: r._id.toString(),
+    quarterNum: parseInt(r.quarter.replace("Q", ""), 10),
+    year: r.year,
+    dueDate: r.headerData.due,
+    totalDue: r.formData.totalDue,
+    status: r.status,
+    filedDate: r.filedAt,
+  }))
+}

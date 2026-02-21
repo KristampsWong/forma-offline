@@ -3,7 +3,7 @@
  *  1. getPayrollTableDataCore        ✅ implemented
  *  2. getCompanyPayrollRecordsCore   (planned)
  *  3. getPreviewPayrollCore          ✅ implemented
- *  4. getEmployeePayrollsCore        (planned)
+ *  4. getEmployeePayrollsCore        ✅ implemented
  *  5. getEmployeePayrollDetailsCore  (planned)
  */
 import dbConnect from "@/lib/db/dbConnect"
@@ -244,4 +244,41 @@ export async function getPreviewPayrollCore(
     data: previewData,
     overview,
   }
+}
+
+/**
+ * Get all payroll records for a specific employee, sorted by pay date descending.
+ * Returns flattened Paycheck objects for the paycheck list view.
+ */
+export async function getEmployeePayrollsCore(
+  userId: string,
+  employeeId: string,
+) {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId }).select("_id")
+  if (!company) {
+    throw new Error(COMPANY_ERRORS.NOT_FOUND)
+  }
+
+  const records = await Payroll.find({
+    companyId: company._id,
+    employeeId,
+  })
+    .select(
+      "payPeriod.startDate payPeriod.endDate payPeriod.payDate earnings.totalGrossPay netPay payMethod approvalStatus",
+    )
+    .sort({ "payPeriod.payDate": -1 })
+    .lean<PayrollRecordFromDB[]>()
+
+  return records.map((r) => ({
+    _id: r._id.toString(),
+    periodStart: extractDateOnly(r.payPeriod?.startDate) ?? "",
+    periodEnd: extractDateOnly(r.payPeriod?.endDate) ?? "",
+    payDate: extractDateOnly(r.payPeriod?.payDate) ?? "",
+    grossPay: r.earnings.totalGrossPay,
+    netPay: r.netPay,
+    method: r.payMethod ?? "",
+    approvalStatus: r.approvalStatus,
+  }))
 }
