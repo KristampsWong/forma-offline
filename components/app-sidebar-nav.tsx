@@ -47,6 +47,10 @@ const navLinks = [
         title: "Expenses",
         url: "/expenses",
       },
+      {
+        title: "Reports",
+        url: "/reports",
+      },
     ],
   },
 ]
