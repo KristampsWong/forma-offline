@@ -145,6 +145,46 @@ export async function createOrUpdateDe9cFormData(
 // ============================================================================
 
 /**
+ * Format a Date to [MM, DD, YYYY] string array for PDF display.
+ */
+function formatDateToArray(date: Date): string[] {
+  return [
+    String(date.getUTCMonth() + 1).padStart(2, "0"),
+    String(date.getUTCDate()).padStart(2, "0"),
+    String(date.getUTCFullYear()),
+  ]
+}
+
+/**
+ * Get a single DE 9C record by ID (for PDF rendering).
+ */
+export async function getDe9cByIdCore(userId: string, de9cId: string) {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId }).select("_id")
+  if (!company) throw new Error(COMPANY_ERRORS.NOT_FOUND)
+
+  const record = await De9c.findOne({
+    _id: de9cId,
+    companyId: company._id,
+  }).lean()
+
+  if (!record) throw new Error("DE 9C record not found")
+
+  return {
+    headerData: {
+      quarterEnded: formatDateToArray(record.headerData.quarterEnded),
+      due: formatDateToArray(record.headerData.due),
+      delinquent: formatDateToArray(record.headerData.delinquent),
+      year: record.headerData.year,
+      quarter: record.headerData.quarter,
+    },
+    companyInfo: record.companyInfo,
+    employees: record.employees,
+  }
+}
+
+/**
  * Get all DE 9C records for a company, sorted by year desc then quarter.
  */
 export async function getAllDe9cRecordsCore(userId: string) {

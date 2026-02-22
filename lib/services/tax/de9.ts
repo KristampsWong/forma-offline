@@ -217,6 +217,29 @@ export async function createOrUpdateDe9FormData(
 // ============================================================================
 
 /**
+ * Get a single DE 9 record by ID (for PDF rendering).
+ */
+export async function getDe9ByIdCore(userId: string, de9Id: string) {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId }).select("_id")
+  if (!company) throw new Error(COMPANY_ERRORS.NOT_FOUND)
+
+  const record = await De9.findOne({
+    _id: de9Id,
+    companyId: company._id,
+  }).lean()
+
+  if (!record) throw new Error("DE 9 record not found")
+
+  return {
+    headerData: record.headerData,
+    companyInfo: record.companyInfo,
+    formData: record.formData,
+  }
+}
+
+/**
  * Get all DE 9 records for a company, sorted by year desc then quarter.
  */
 export async function getAllDe9RecordsCore(userId: string) {

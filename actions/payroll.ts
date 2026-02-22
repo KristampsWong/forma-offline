@@ -11,6 +11,7 @@ import {
   batchCreatePayrollRecordsCore,
 } from "@/lib/services/payroll/batch"
 import {
+  getEmployeePayrollDetailsCore,
   getEmployeePayrollsCore,
   getPayrollTableDataCore,
   getPreviewPayrollCore,
@@ -149,5 +150,14 @@ export async function batchCreateDefaultPayrollRecords(
 export async function getEmployeePayrolls(employeeId: string) {
   return withAuth((userId) =>
     getEmployeePayrollsCore(userId, employeeId),
+  )
+}
+
+/**
+ * Get detailed payroll information (for PDF/email)
+ */
+export async function getEmployeePayrollDetails(payrollId: string) {
+  return withAuth((userId) =>
+    getEmployeePayrollDetailsCore(userId, payrollId),
   )
 }

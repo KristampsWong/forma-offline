@@ -91,7 +91,7 @@ export default function TaxFilingCard({
     periodEndDate = endDate
     periodText = `${extractDateOnly(startDate)} - ${extractDateOnly(endDate)}`
     periodLabel = `(Q${quarterNum})`
-    fileLink = formType === "de9" ? `/pdf/de9/${id}` : `/pdf/de9c/${id}`
+    fileLink = formType === "de9" ? `/de9/${id}` : `/de9c/${id}`
   } else {
     // Form 941/940: use provided periodStart/periodEnd
     periodStartDate = periodStart ? new Date(periodStart) : undefined
