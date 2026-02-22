@@ -474,6 +474,38 @@ export async function getAllForm941FilingsCore(userId: string) {
 }
 
 /**
+ * Get a single Form 941 filing by ID with company data (for PDF filling).
+ */
+export async function getForm941FilingByIdCore(
+  userId: string,
+  form941Id: string,
+) {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId })
+  if (!company) throw new Error(COMPANY_ERRORS.NOT_FOUND)
+
+  const form941 = await Form941.findOne({
+    _id: form941Id,
+    companyId: company._id,
+  }).lean()
+
+  if (!form941) throw new Error("Form 941 record not found.")
+
+  return {
+    form941: {
+      ...form941,
+      _id: form941._id.toString(),
+    },
+    company: {
+      name: company.name,
+      ein: company.ein,
+      address: company.address,
+    },
+  }
+}
+
+/**
  * Get paginated filed filing records across all form types (941, 940, DE9, DE9C).
  */
 export async function getFiledFilingRecordsCore(

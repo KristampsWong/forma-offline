@@ -5,9 +5,13 @@ import { getAllDe9RecordsCore } from "@/lib/services/tax/de9"
 import { getAllDe9cRecordsCore } from "@/lib/services/tax/de9c"
 import {
   getAllForm941FilingsCore,
+  getForm941FilingByIdCore,
   getFiledFilingRecordsCore,
 } from "@/lib/services/tax/form941"
-import { getAllForm940FilingsCore } from "@/lib/services/tax/form940"
+import {
+  getAllForm940FilingsCore,
+  getForm940FilingByIdCore,
+} from "@/lib/services/tax/form940"
 import {
   getAllTaxPaymentsCore,
   getPaidPaymentRecordsCore,
@@ -88,6 +92,14 @@ export async function getAllForm941Filings() {
 
 export async function getAllForm940Filings() {
   return withAuth((userId) => getAllForm940FilingsCore(userId))
+}
+
+export async function getForm941FilingById(form941Id: string) {
+  return withAuth((userId) => getForm941FilingByIdCore(userId, form941Id))
+}
+
+export async function getForm940FilingById(form940Id: string) {
+  return withAuth((userId) => getForm940FilingByIdCore(userId, form940Id))
 }
 
 export type FilingRecordItem = Awaited<

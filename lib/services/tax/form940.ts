@@ -343,6 +343,38 @@ export async function createOrUpdateForm940FromApprovedPayrolls(
 // ============================================================================
 
 /**
+ * Get a single Form 940 filing by ID with company data (for PDF filling).
+ */
+export async function getForm940FilingByIdCore(
+  userId: string,
+  form940Id: string,
+) {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId })
+  if (!company) throw new Error(COMPANY_ERRORS.NOT_FOUND)
+
+  const form940 = await Form940.findOne({
+    _id: form940Id,
+    companyId: company._id,
+  }).lean()
+
+  if (!form940) throw new Error("Form 940 record not found.")
+
+  return {
+    form940: {
+      ...form940,
+      _id: form940._id.toString(),
+    },
+    company: {
+      name: company.name,
+      ein: company.ein,
+      address: company.address,
+    },
+  }
+}
+
+/**
  * Get all Form 940 filings for a company, sorted by year desc.
  */
 export async function getAllForm940FilingsCore(userId: string) {
