@@ -381,7 +381,7 @@ export default function PayrollActivities({
           <PayrollMonthPicker month={month} year={year} />
         </div>
       </div>
-      <div className="overflow-hidden rounded-md border">
+      <div className="overflow-hidden rounded-md bg-card border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
