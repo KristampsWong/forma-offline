@@ -81,6 +81,30 @@ export const PAYROLL_ERRORS = {
 } as const
 
 /**
+ * Expense Category Errors
+ */
+export const EXPENSE_CATEGORY_ERRORS = {
+  NOT_FOUND: "Expense category not found",
+  ALREADY_EXISTS: "A category with this name already exists",
+  FAILED_TO_CREATE: "Failed to create expense category",
+  FAILED_TO_UPDATE: "Failed to update expense category",
+  HAS_EXPENSES: "Cannot delete category that has expenses",
+} as const
+
+/**
+ * Expense Errors
+ */
+export const EXPENSE_ERRORS = {
+  NOT_FOUND: "Expense not found",
+  FAILED_TO_CREATE: "Failed to create expense",
+  FAILED_TO_UPDATE: "Failed to update expense",
+  FAILED_TO_DELETE: "Failed to delete expense",
+  INVALID_AMOUNT: "Amount must be greater than 0",
+  INVALID_DATE: "Invalid expense date",
+  CATEGORY_NOT_FOUND: "Expense category not found",
+} as const
+
+/**
  * Generic Errors
  */
 export const GENERIC_ERRORS = {
@@ -99,5 +123,7 @@ export const ERRORS = {
   EMPLOYEE: EMPLOYEE_ERRORS,
   PAYROLL: PAYROLL_ERRORS,
   STATE_RATE: STATE_RATE_ERRORS,
+  EXPENSE_CATEGORY: EXPENSE_CATEGORY_ERRORS,
+  EXPENSE: EXPENSE_ERRORS,
   GENERIC: GENERIC_ERRORS,
 } as const
