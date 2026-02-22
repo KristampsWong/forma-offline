@@ -18,6 +18,17 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+  ComboboxValue,
+} from "@/components/ui/combobox"
+import { Button } from "@/components/ui/button"
 import InputWithCalendar from "@/components/ui/input-with-calander"
 import { cn } from "@/lib/utils"
 export interface SelectOption {
@@ -149,6 +160,89 @@ export function FormSelect<TFieldValues extends FieldValues>({
           )}
         </Field>
       )}
+    />
+  )
+}
+
+interface FormComboboxProps<TFieldValues extends FieldValues> {
+  control: Control<TFieldValues>
+  name: FieldPath<TFieldValues>
+  label: ReactNode
+  id: string
+  options: readonly SelectOption[]
+  placeholder?: string
+  disabled?: boolean
+  labelClassName?: string
+  errorPosition?: "below" | "inline"
+}
+
+export function FormCombobox<TFieldValues extends FieldValues>({
+  control,
+  name,
+  label,
+  id,
+  options,
+  placeholder = "Select...",
+  disabled,
+  labelClassName,
+  errorPosition = "below",
+}: FormComboboxProps<TFieldValues>) {
+  const items = options as SelectOption[]
+
+  return (
+    <Controller
+      control={control}
+      name={name}
+      render={({ field, fieldState }) => {
+        const selectedItem =
+          items.find((o) => o.value === field.value) ?? null
+
+        return (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor={id} className={labelClassName}>
+              {label}
+              {errorPosition === "inline" && fieldState.invalid && (
+                <FieldError className="text-xs" errors={[fieldState.error]} />
+              )}
+            </FieldLabel>
+            <Combobox
+              items={items}
+              value={selectedItem}
+              onValueChange={(item) =>
+                field.onChange((item as SelectOption | null)?.value ?? "")
+              }
+            >
+              <ComboboxTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-between font-normal"
+                    disabled={disabled}
+                    id={id}
+                  >
+                    <ComboboxValue placeholder={placeholder} />
+                  </Button>
+                }
+              />
+              <ComboboxContent>
+                <ComboboxInput showTrigger={false} placeholder="Search..." />
+                <ComboboxEmpty>No results found</ComboboxEmpty>
+                <ComboboxList>
+                  {(item: SelectOption) => (
+                    <ComboboxItem key={item.value} value={item}>
+                      {item.label}
+                    </ComboboxItem>
+                  )}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+            {errorPosition === "below" && fieldState.invalid && (
+              <FieldError errors={[fieldState.error]} />
+            )}
+          </Field>
+        )
+      }}
     />
   )
 }

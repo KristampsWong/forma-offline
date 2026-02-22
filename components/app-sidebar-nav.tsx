@@ -14,12 +14,22 @@ import { cn } from "@/lib/utils"
 
 const navLinks = [
   {
-    title: "Payroll",
+    title: "General",
     url: "#",
     items: [
       {
         title: "Overview",
         url: "/overview",
+      },
+    ],
+  },
+  {
+    title: "Payroll",
+    url: "#",
+    items: [
+      {
+        title: "Run Payroll",
+        url: "/payroll",
       },
       {
         title: "Employees",
@@ -35,14 +45,6 @@ const navLinks = [
     title: "Accounting",
     url: "#",
     items: [
-      {
-        title: "Transactions",
-        url: "/bookkeeping",
-      },
-      {
-        title: "Invoices",
-        url: "/invoices",
-      },
       {
         title: "Expenses",
         url: "/expenses",
