@@ -12,6 +12,14 @@ import type {
   W4FormVersion,
 } from "@/lib/constants/tax-constants"
 
+export interface Address {
+  street1: string
+  street2?: string
+  city: string
+  state: string
+  zipCode: string
+}
+
 /**
  * Serialized employee interfaces for client components.
  *
@@ -56,13 +64,7 @@ export interface EmployeeDetail {
   dateOfBirth: string
   email: string
   phoneNumber?: string
-  address: {
-    street1: string
-    street2?: string
-    city: string
-    state: string
-    zipCode: string
-  }
+  address: Address
 
   // Employment
   workState: SupportedState

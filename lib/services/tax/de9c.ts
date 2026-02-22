@@ -10,6 +10,7 @@ import Payroll from "@/models/payroll"
 import De9c from "@/models/de9c"
 import { calcDe9c, type De9cPayrollInput } from "@/lib/tax/calc-de9c"
 import { getQuarterDates, getQuarterDeadlines } from "@/lib/tax/deadlines"
+import { formatDateToArray } from "@/lib/date/utils"
 import { COMPANY_ERRORS } from "@/lib/constants/errors"
 import type { Quarter, QuarterNumber } from "@/types/quarter"
 
@@ -143,6 +144,35 @@ export async function createOrUpdateDe9cFormData(
 // ============================================================================
 // Read queries
 // ============================================================================
+
+/**
+ * Get a single DE 9C record by ID (for PDF rendering).
+ */
+export async function getDe9cByIdCore(userId: string, de9cId: string) {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId }).select("_id")
+  if (!company) throw new Error(COMPANY_ERRORS.NOT_FOUND)
+
+  const record = await De9c.findOne({
+    _id: de9cId,
+    companyId: company._id,
+  }).lean()
+
+  if (!record) throw new Error("DE 9C record not found")
+
+  return {
+    headerData: {
+      quarterEnded: formatDateToArray(record.headerData.quarterEnded),
+      due: formatDateToArray(record.headerData.due),
+      delinquent: formatDateToArray(record.headerData.delinquent),
+      year: record.headerData.year,
+      quarter: record.headerData.quarter,
+    },
+    companyInfo: record.companyInfo,
+    employees: record.employees,
+  }
+}
 
 /**
  * Get all DE 9C records for a company, sorted by year desc then quarter.

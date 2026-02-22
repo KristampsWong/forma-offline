@@ -171,8 +171,8 @@ const columns: ColumnDef<FilingRecordItem>[] = [
           : formType === "940"
             ? `/api/forms/fill940?id=${id}`
             : formType === "de9c"
-              ? `/pdf/de9c/${id}`
-              : `/pdf/de9/${id}`
+              ? `/de9c/${id}`
+              : `/de9/${id}`
       return (
         <div className="text-end">
           <Link

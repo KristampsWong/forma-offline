@@ -38,7 +38,7 @@ export default function PaycheckActionMenu({
       <DropdownMenuContent align="end" sideOffset={8}>
         <DropdownMenuItem className="capitalize" asChild>
           <Link
-            href={`/pdf/payroll/${paycheckId}?type=paystub`}
+            href={`/payroll/${paycheckId}/paystub`}
             target="_blank"
             rel="noopener noreferrer"
           >

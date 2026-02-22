@@ -421,6 +421,111 @@ export async function getEmployeeById(
   return { success: true, employee: employeeDetail }
 }
 
+export async function getEmployeeWithHolding(employeeId: string): Promise<
+  | {
+      success: true
+      employee: {
+        firstName: string
+        middleName?: string
+        lastName: string
+        ssnDecrypted: string
+        address: {
+          street1: string
+          street2?: string
+          city: string
+          state: string
+          zipCode: string
+        }
+        hireDate: string
+      }
+      federalW4: {
+        filingStatus: string
+        multipleJobsOrSpouseWorks: boolean
+        claimedDependentsDeduction: number
+        otherIncome: number
+        deductions: number
+        extraWithholding: number
+      }
+      employer: {
+        name: string
+        ein: string
+        address: {
+          line1: string
+          line2?: string
+          city: string
+          state: string
+          zip: string
+        }
+      }
+    }
+  | { success: false; error: string }
+> {
+  const { user } = await requireAuth()
+
+  if (!employeeId) {
+    return { success: false, error: "Employee ID is required." }
+  }
+
+  await dbConnect()
+
+  const company = await Company.findOne({ userId: user.id })
+  if (!company) {
+    return { success: false, error: COMPANY_ERRORS.NOT_FOUND }
+  }
+
+  const employee: EmployeeDocument | null = await Employee.findOne({
+    _id: employeeId,
+    companyId: company._id,
+  })
+
+  if (!employee) {
+    return { success: false, error: EMPLOYEE_ERRORS.NOT_FOUND }
+  }
+
+  if (!employee.currentFederalW4) {
+    return { success: false, error: "Employee W-4 data not found." }
+  }
+
+  const w4 = employee.currentFederalW4
+
+  return {
+    success: true,
+    employee: {
+      firstName: employee.firstName,
+      middleName: employee.middleName || undefined,
+      lastName: employee.lastName,
+      ssnDecrypted: employee.ssnDecrypted,
+      address: {
+        street1: employee.address!.street1,
+        street2: employee.address!.street2 || undefined,
+        city: employee.address!.city,
+        state: employee.address!.state,
+        zipCode: employee.address!.zipCode,
+      },
+      hireDate: employee.hireDate.toISOString(),
+    },
+    federalW4: {
+      filingStatus: w4.filingStatus,
+      multipleJobsOrSpouseWorks: w4.multipleJobsOrSpouseWorks,
+      claimedDependentsDeduction: w4.claimedDependentsDeduction,
+      otherIncome: w4.otherIncome,
+      deductions: w4.deductions,
+      extraWithholding: w4.extraWithholding,
+    },
+    employer: {
+      name: company.name,
+      ein: company.ein,
+      address: {
+        line1: company.address.line1,
+        line2: company.address.line2 || undefined,
+        city: company.address.city,
+        state: company.address.state,
+        zip: company.address.zip,
+      },
+    },
+  }
+}
+
 // ============================================================
 // Update
 // ============================================================

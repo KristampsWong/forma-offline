@@ -19,7 +19,7 @@ import {
   getSdiRate,
 } from "@/lib/tax/calc-de9"
 import { getQuarterDates, getQuarterDeadlines } from "@/lib/tax/deadlines"
-import { getYearDateRange } from "@/lib/date/utils"
+import { getYearDateRange, formatDateToArray } from "@/lib/date/utils"
 import { COMPANY_ERRORS } from "@/lib/constants/errors"
 import type { Quarter, QuarterNumber } from "@/types/quarter"
 
@@ -215,6 +215,36 @@ export async function createOrUpdateDe9FormData(
 // ============================================================================
 // Read queries
 // ============================================================================
+
+/**
+ * Get a single DE 9 record by ID (for PDF rendering).
+ */
+export async function getDe9ByIdCore(userId: string, de9Id: string) {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId }).select("_id")
+  if (!company) throw new Error(COMPANY_ERRORS.NOT_FOUND)
+
+  const record = await De9.findOne({
+    _id: de9Id,
+    companyId: company._id,
+  }).lean()
+
+  if (!record) throw new Error("DE 9 record not found")
+
+  return {
+    headerData: {
+      quarterStarted: formatDateToArray(record.headerData.quarterStarted),
+      quarterEnded: formatDateToArray(record.headerData.quarterEnded),
+      due: formatDateToArray(record.headerData.due),
+      delinquent: formatDateToArray(record.headerData.delinquent),
+      year: record.headerData.year,
+      quarter: record.quarter.replace("Q", ""),
+    },
+    companyInfo: record.companyInfo,
+    formData: record.formData,
+  }
+}
 
 /**
  * Get all DE 9 records for a company, sorted by year desc then quarter.
