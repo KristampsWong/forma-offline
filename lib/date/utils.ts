@@ -172,6 +172,25 @@ export function toLocalDate(utcDate: Date): Date {
 }
 
 /**
+ * Get month date range (1st to last day) in UTC
+ * @param date - Any date within the target month
+ * @returns Start and end dates for that calendar month
+ *
+ * @example
+ * getMonthDateRange(new Date("2026-01-15T00:00:00.000Z"))
+ * // { start: 2026-01-01T00:00:00.000Z, end: 2026-01-31T23:59:59.999Z }
+ */
+export function getMonthDateRange(date: Date): { start: Date; end: Date } {
+  const year = date.getUTCFullYear()
+  const month = date.getUTCMonth()
+
+  return {
+    start: new Date(Date.UTC(year, month, 1, 0, 0, 0, 0)),
+    end: new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999)),
+  }
+}
+
+/**
  * Get year date range (January 1 to December 31) in UTC
  * @param year - The year
  * @returns Start and end dates for the year

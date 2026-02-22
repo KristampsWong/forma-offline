@@ -11,10 +11,18 @@ import {
   batchCreatePayrollRecordsCore,
 } from "@/lib/services/payroll/batch"
 import {
+  getEmployeePayrollsCore,
   getPayrollTableDataCore,
   getPreviewPayrollCore,
 } from "@/lib/services/payroll/queries"
 import { getPayrollYTDCore } from "@/lib/services/payroll/reporting"
+import { syncAllTaxPaymentsFromApprovedPayrolls } from "@/lib/services/tax/payments"
+import { createOrUpdateForm941FromApprovedPayrolls } from "@/lib/services/tax/form941"
+import { createOrUpdateForm940FromApprovedPayrolls } from "@/lib/services/tax/form940"
+import { createOrUpdateDe9FormData } from "@/lib/services/tax/de9"
+import { createOrUpdateDe9cFormData } from "@/lib/services/tax/de9c"
+import { getQuarter } from "@/lib/tax/deadlines"
+import type { QuarterNumber } from "@/types/quarter"
 import type { PayrollRecord } from "@/types/payroll"
 
 /**
@@ -85,11 +93,40 @@ export async function getPreviewPayroll(startDate: string, endDate: string) {
 
 /**
  * Approve payroll records (change status from pending to approved)
+ * After approval, syncs tax payment records and tax forms from the approved payrolls.
  */
 export async function approvePayrollRecords(payrollIds: string[]) {
-  return withAuth((userId) =>
-    approvePayrollRecordsCore(userId, payrollIds),
-  )
+  return withAuth(async (userId) => {
+    const result = await approvePayrollRecordsCore(userId, payrollIds)
+
+    // If we have an end date, trigger all tax syncs in parallel
+    if (result.endDate) {
+      const quarterStr = getQuarter(result.endDate)
+      const quarterNumber = parseInt(quarterStr.replace("Q", ""), 10) as QuarterNumber
+
+      const [taxPayments, form941, form940, de9, de9c] = await Promise.all([
+        syncAllTaxPaymentsFromApprovedPayrolls(userId, result.endDate),
+        createOrUpdateForm941FromApprovedPayrolls(userId, result.endDate),
+        createOrUpdateForm940FromApprovedPayrolls(userId, result.endDate),
+        createOrUpdateDe9FormData(userId, result.endDate.getUTCFullYear(), quarterNumber),
+        createOrUpdateDe9cFormData(userId, result.endDate.getUTCFullYear(), quarterNumber),
+      ])
+
+      const taxSyncErrors: string[] = []
+      if (!taxPayments.success) taxSyncErrors.push("Tax Payments")
+      if (!form941.success) taxSyncErrors.push("Form 941")
+      if (!form940.success) taxSyncErrors.push("Form 940")
+      if (!de9.success) taxSyncErrors.push("DE 9")
+      if (!de9c.success) taxSyncErrors.push("DE 9C")
+
+      return {
+        ...result,
+        taxSyncErrors,
+      }
+    }
+
+    return { ...result, taxSyncErrors: [] as string[] }
+  })
 }
 
 export async function batchCreateDefaultPayrollRecords(
@@ -106,5 +143,11 @@ export async function batchCreateDefaultPayrollRecords(
       payDate,
       employeeHours,
     ),
+  )
+}
+
+export async function getEmployeePayrolls(employeeId: string) {
+  return withAuth((userId) =>
+    getEmployeePayrollsCore(userId, employeeId),
   )
 }
