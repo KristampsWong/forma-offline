@@ -206,6 +206,25 @@ export function getYearDateRange(year: number): { start: Date; end: Date } {
   }
 }
 
+/**
+ * Format a Date to [MM, DD, YYYY] string array for PDF display.
+ * Converts on the server side so Date objects don't cross the
+ * Server Component → Client Component serialization boundary.
+ *
+ * @param date - Date object (e.g., from a .lean() query)
+ * @returns Tuple of zero-padded strings: ["MM", "DD", "YYYY"]
+ *
+ * @example
+ * formatDateToArray(new Date("2026-03-31T00:00:00.000Z")) // ["03", "31", "2026"]
+ */
+export function formatDateToArray(date: Date): string[] {
+  return [
+    String(date.getUTCMonth() + 1).padStart(2, "0"),
+    String(date.getUTCDate()).padStart(2, "0"),
+    String(date.getUTCFullYear()),
+  ]
+}
+
 // ============================================================================
 // URL Parameter Date Utilities (MM-DD-YYYY format)
 // ============================================================================

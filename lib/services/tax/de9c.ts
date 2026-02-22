@@ -10,6 +10,7 @@ import Payroll from "@/models/payroll"
 import De9c from "@/models/de9c"
 import { calcDe9c, type De9cPayrollInput } from "@/lib/tax/calc-de9c"
 import { getQuarterDates, getQuarterDeadlines } from "@/lib/tax/deadlines"
+import { formatDateToArray } from "@/lib/date/utils"
 import { COMPANY_ERRORS } from "@/lib/constants/errors"
 import type { Quarter, QuarterNumber } from "@/types/quarter"
 
@@ -143,17 +144,6 @@ export async function createOrUpdateDe9cFormData(
 // ============================================================================
 // Read queries
 // ============================================================================
-
-/**
- * Format a Date to [MM, DD, YYYY] string array for PDF display.
- */
-function formatDateToArray(date: Date): string[] {
-  return [
-    String(date.getUTCMonth() + 1).padStart(2, "0"),
-    String(date.getUTCDate()).padStart(2, "0"),
-    String(date.getUTCFullYear()),
-  ]
-}
 
 /**
  * Get a single DE 9C record by ID (for PDF rendering).

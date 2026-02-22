@@ -2,17 +2,6 @@
 import { Document, Page, Text, View } from "@react-pdf/renderer"
 import dynamic from "next/dynamic"
 
-/**
- * Format a Date object to string array [MM, DD, YYYY] for PDF display
- */
-function formatDateToArray(date: Date): string[] {
-  return [
-    String(date.getUTCMonth() + 1).padStart(2, "0"),
-    String(date.getUTCDate()).padStart(2, "0"),
-    String(date.getUTCFullYear()),
-  ]
-}
-
 const PDFViewer = dynamic(
   () => import("@react-pdf/renderer").then((mod) => mod.PDFViewer),
   {
@@ -153,9 +142,10 @@ export default function De9Documents({
   formData,
 }: {
   headerData: {
-    quarterEnded: Date
-    due: Date
-    delinquent: Date
+    quarterStarted: string[]
+    quarterEnded: string[]
+    due: string[]
+    delinquent: string[]
     year: string
     quarter: string
   }
@@ -184,10 +174,6 @@ export default function De9Documents({
     outBusinessDate: string
   }
 }) {
-  // Convert Date objects to string arrays for PDF display
-  const quarterEndedArr = formatDateToArray(headerData.quarterEnded)
-  const dueArr = formatDateToArray(headerData.due)
-  const delinquentArr = formatDateToArray(headerData.delinquent)
   return (
     <PDFViewer style={{ width: "100%", height: "100vh" }}>
       <Document>
@@ -228,7 +214,7 @@ export default function De9Documents({
                 <Text>ENDED</Text>
               </View>
               <Text style={{ fontSize: 10, letterSpacing: 2, color: "#666" }}>
-                {quarterEndedArr.join("  ")}
+                {headerData.quarterEnded.join("  ")}
               </Text>
             </View>
 
@@ -238,7 +224,7 @@ export default function De9Documents({
             >
               <Text style={{ fontSize: 6 }}>DUE</Text>
               <Text style={{ fontSize: 10, letterSpacing: 2, color: "#666" }}>
-                {dueArr.join("  ")}
+                {headerData.due.join("  ")}
               </Text>
             </View>
 
@@ -252,7 +238,7 @@ export default function De9Documents({
                 <Text>OR RECEIVED BY</Text>
               </View>
               <Text style={{ fontSize: 10, letterSpacing: 2, color: "#666" }}>
-                {delinquentArr.join("  ")}
+                {headerData.delinquent.join("  ")}
               </Text>
             </View>
 
