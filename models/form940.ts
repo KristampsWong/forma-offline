@@ -1,5 +1,7 @@
 import mongoose, { Document, Model, Types } from "mongoose"
 
+import type { Form940FilingStatus } from "@/lib/constants/tax-constants"
+
 /**
  * Form 940 - Employer's Annual Federal Unemployment (FUTA) Tax Return
  *
@@ -10,12 +12,6 @@ import mongoose, { Document, Model, Types } from "mongoose"
  */
 
 // --- Types ---
-
-export type Form940FilingStatus =
-  | "draft"
-  | "ready_to_file"
-  | "filed"
-  | "amended"
 
 export interface ICreditReductionState {
   state: string

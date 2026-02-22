@@ -144,11 +144,13 @@ describe("Bug 7: DE9 upsert clobbers existing status", () => {
         zip: "94102",
       },
       currentStateRate: {
+        state: "CA",
         eddAccountNumber: "123-4567-8",
         UIRate: 0.034,
         ETTRate: 0.001,
+        effectiveDate: new Date("2025-01-01T00:00:00Z"),
       },
-    })
+    } as never)
 
     vi.mocked(Payroll.find).mockReturnValue(
       [

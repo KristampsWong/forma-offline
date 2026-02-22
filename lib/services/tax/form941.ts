@@ -8,6 +8,9 @@ import dbConnect from "@/lib/db/dbConnect"
 import Company from "@/models/company"
 import Payroll from "@/models/payroll"
 import Form941 from "@/models/form941"
+import Form940 from "@/models/form940"
+import De9 from "@/models/de9"
+import De9c from "@/models/de9c"
 import { Federal941Payment } from "@/models/taxpayment"
 import type { Quarter } from "@/types/quarter"
 import type { PayrollRecordFromDB } from "@/lib/services/payroll/types"
@@ -434,5 +437,172 @@ export async function createOrUpdateForm941FromApprovedPayrolls(
       success: false,
       error: "An error occurred while creating/updating Form 941.",
     }
+  }
+}
+
+// ============================================================================
+// Read queries
+// ============================================================================
+
+/**
+ * Get all Form 941 filings for a company, sorted by year desc then quarter.
+ */
+export async function getAllForm941FilingsCore(userId: string) {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId }).select("_id")
+  if (!company) throw new Error(COMPANY_ERRORS.NOT_FOUND)
+
+  const records = await Form941.find({ companyId: company._id })
+    .select(
+      "quarter year periodStart periodEnd dueDate filingStatus filedDate balanceDue",
+    )
+    .sort({ year: -1, quarter: 1 })
+    .lean()
+
+  return records.map((r) => ({
+    _id: r._id.toString(),
+    quarter: r.quarter,
+    year: r.year,
+    periodStart: r.periodStart.toISOString(),
+    periodEnd: r.periodEnd.toISOString(),
+    dueDate: r.dueDate.toISOString(),
+    filingStatus: r.filingStatus,
+    filedDate: r.filedDate?.toISOString(),
+    balanceDue: r.balanceDue,
+  }))
+}
+
+/**
+ * Get paginated filed filing records across all form types (941, 940, DE9, DE9C).
+ */
+export async function getFiledFilingRecordsCore(
+  userId: string,
+  page: number,
+  pageSize: number,
+) {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId }).select("_id")
+  if (!company) throw new Error(COMPANY_ERRORS.NOT_FOUND)
+
+  const companyId = company._id
+
+  // Query all four form types in parallel
+  const [form941Records, form940Records, de9Records, de9cRecords] =
+    await Promise.all([
+      Form941.find({ companyId, filingStatus: "filed" })
+        .select(
+          "quarter year periodStart periodEnd dueDate filingStatus filedDate balanceDue",
+        )
+        .lean(),
+      Form940.find({ companyId, filingStatus: "filed" })
+        .select(
+          "year periodStart periodEnd dueDate filingStatus filedDate line14_balanceDue",
+        )
+        .lean(),
+      De9.find({ companyId, status: "filed" })
+        .select("quarter year headerData formData.totalDue status filedAt")
+        .lean(),
+      De9c.find({ companyId, status: "filed" })
+        .select("quarter year headerData status filedAt")
+        .lean(),
+    ])
+
+  // Normalize all records into a common shape
+  type FilingRecord = {
+    _id: string
+    formType: "941" | "940" | "de9" | "de9c"
+    title: string
+    quarter?: string
+    year: number
+    periodStart: string
+    periodEnd: string
+    dueDate: string
+    filingStatus: string
+    filedDate?: string
+    amount: number
+  }
+
+  const allRecords: FilingRecord[] = [
+    ...form941Records.map((r) => ({
+      _id: r._id.toString(),
+      formType: "941" as const,
+      title: "Form 941",
+      quarter: r.quarter,
+      year: r.year,
+      periodStart: r.periodStart.toISOString(),
+      periodEnd: r.periodEnd.toISOString(),
+      dueDate: r.dueDate.toISOString(),
+      filingStatus: r.filingStatus,
+      filedDate: r.filedDate?.toISOString(),
+      amount: r.balanceDue,
+    })),
+    ...form940Records.map((r) => ({
+      _id: r._id.toString(),
+      formType: "940" as const,
+      title: "Form 940",
+      quarter: undefined,
+      year: r.year,
+      periodStart: r.periodStart.toISOString(),
+      periodEnd: r.periodEnd.toISOString(),
+      dueDate: r.dueDate.toISOString(),
+      filingStatus: r.filingStatus,
+      filedDate: r.filedDate?.toISOString(),
+      amount: r.line14_balanceDue,
+    })),
+    ...de9Records.map((r) => ({
+      _id: r._id.toString(),
+      formType: "de9" as const,
+      title: "DE 9",
+      quarter: r.quarter,
+      year: r.year,
+      periodStart: r.headerData.quarterStarted.toISOString(),
+      periodEnd: r.headerData.quarterEnded.toISOString(),
+      dueDate: r.headerData.due.toISOString(),
+      filingStatus: r.status,
+      filedDate: r.filedAt?.toISOString(),
+      amount: parseFloat(r.formData.totalDue) || 0,
+    })),
+    ...de9cRecords.map((r) => {
+      // Derive quarter start from quarterEnded (DE9C header lacks quarterStarted)
+      const qEnd = r.headerData.quarterEnded
+      const quarterStartMonth = qEnd.getUTCMonth() - 2
+      const periodStart = new Date(
+        Date.UTC(qEnd.getUTCFullYear(), quarterStartMonth, 1),
+      )
+      return {
+        _id: r._id.toString(),
+        formType: "de9c" as const,
+        title: "DE 9C",
+        quarter: r.quarter,
+        year: r.year,
+        periodStart: periodStart.toISOString(),
+        periodEnd: qEnd.toISOString(),
+        dueDate: r.headerData.due.toISOString(),
+        filingStatus: r.status,
+        filedDate: r.filedAt?.toISOString(),
+        amount: 0,
+      }
+    }),
+  ]
+
+  // Sort by filed date descending
+  allRecords.sort((a, b) => {
+    const dateA = a.filedDate ? new Date(a.filedDate).getTime() : 0
+    const dateB = b.filedDate ? new Date(b.filedDate).getTime() : 0
+    return dateB - dateA
+  })
+
+  const total = allRecords.length
+  const skip = (page - 1) * pageSize
+  const paginatedRecords = allRecords.slice(skip, skip + pageSize)
+
+  return {
+    records: paginatedRecords,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
   }
 }

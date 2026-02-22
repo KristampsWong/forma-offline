@@ -119,7 +119,7 @@ describe("Bug 6: Monthly deposit amounts — month-aware indexing", () => {
     // Setup: Company exists
     vi.mocked(Company.findOne).mockResolvedValue({
       _id: "company-id-123",
-    })
+    } as never)
 
     // Setup: Payroll records exist (quarterly + YTD)
     const fakePayrolls = [

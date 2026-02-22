@@ -73,7 +73,7 @@ import Company from "@/models/company"
 function setupMocks(existing940Status: string) {
   vi.mocked(Company.findOne).mockResolvedValue({
     _id: "company-id-123",
-  })
+  } as never)
 
   const fakePayrolls = [
     {

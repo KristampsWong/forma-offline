@@ -25,6 +25,7 @@ export interface PayrollRecordFromDB {
   employeeInfo: { firstName: string; lastName: string }
   payPeriod?: { periodType: string; startDate: Date; endDate: Date; payDate: Date }
   hoursWorked?: { totalHours: number }
+  payMethod?: string
   compensation: { payType: string; payRate: number }
   earnings: {
     regularPay: number

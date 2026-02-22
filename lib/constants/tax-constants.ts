@@ -52,6 +52,36 @@ export const TAX_EXEMPTIONS = [
 // Supported states
 export const SUPPORTED_STATES = [{ value: "CA", label: "California" }] as const
 
+// Form 941 filing statuses (quarterly federal)
+export const FORM_941_FILING_STATUSES = [
+  { value: "draft", label: "Draft" },
+  { value: "ready_to_file", label: "Ready to File" },
+  { value: "filed", label: "Filed" },
+  { value: "amended", label: "Amended" },
+] as const
+
+// Form 940 filing statuses (annual FUTA)
+export const FORM_940_FILING_STATUSES = [
+  { value: "draft", label: "Draft" },
+  { value: "ready_to_file", label: "Ready to File" },
+  { value: "filed", label: "Filed" },
+  { value: "amended", label: "Amended" },
+] as const
+
+// CA DE 9 / DE 9C statuses
+export const DE9_STATUSES = [
+  { value: "computed", label: "Computed" },
+  { value: "filed", label: "Filed" },
+] as const
+
+// Tax payment types
+export const TAX_PAYMENT_TYPES = [
+  { value: "federal941", label: "Federal 941" },
+  { value: "federal940", label: "Federal 940" },
+  { value: "caPitSdi", label: "CA PIT/SDI" },
+  { value: "caSuiEtt", label: "CA SUI/ETT" },
+] as const
+
 // Type exports
 export type W4FormVersion = (typeof W4_FORM_VERSIONS)[number]["value"]
 export type FederalFilingStatus =
@@ -60,3 +90,10 @@ export type StateFilingStatus = (typeof STATE_FILING_STATUSES)[number]["value"]
 export type WagePlanCode = (typeof WAGE_PLAN_OPTIONS)[number]["value"]
 export type TaxExemption = (typeof TAX_EXEMPTIONS)[number]["value"]
 export type SupportedState = (typeof SUPPORTED_STATES)[number]["value"]
+export type Form941FilingStatus =
+  (typeof FORM_941_FILING_STATUSES)[number]["value"]
+export type Form940FilingStatus =
+  (typeof FORM_940_FILING_STATUSES)[number]["value"]
+export type De9Status = (typeof DE9_STATUSES)[number]["value"]
+export type De9cStatus = De9Status
+export type TaxPaymentType = (typeof TAX_PAYMENT_TYPES)[number]["value"]
