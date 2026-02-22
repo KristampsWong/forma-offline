@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { PDFDocument, type PDFForm } from "pdf-lib"
 import { getForm940FilingById } from "@/actions/taxes"
 import { getPdfFormPath } from "@/lib/constants/pdf-forms"
-import { getTaxRates } from "@/lib/constants/tax-rates"
+import { type TaxYear, getTaxRatesByYear } from "@/lib/constants/tax-rates"
 import { logger } from "@/lib/logger"
 
 export async function GET(req: NextRequest) {
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     const { form940, company } = result.data
 
     // Get tax rates for the form year
-    const rates = getTaxRates(new Date(form940.year, 0, 1))
+    const rates = getTaxRatesByYear(form940.year as TaxYear)
     const CA_FUTA_CREDIT_REDUCTION_RATE =
       rates.california.futaCreditReductionRate
 
