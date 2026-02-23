@@ -29,6 +29,7 @@ export interface AuthResponse {
 
 export const AUTH_ERRORS = {
   NOT_AUTHENTICATED: "Unauthorized - Please sign in",
+  NOT_AUTHORIZED: "Access denied - This application is restricted",
 } as const
 
 /**
@@ -63,6 +64,11 @@ export async function requireAuth(): Promise<AuthResponse> {
 
   if (!currentUser) {
     throw new Error(AUTH_ERRORS.NOT_AUTHENTICATED)
+  }
+
+  const allowedEmail = process.env.ALLOWED_EMAIL
+  if (allowedEmail && currentUser.user.email !== allowedEmail) {
+    throw new Error(AUTH_ERRORS.NOT_AUTHORIZED)
   }
 
   return currentUser
