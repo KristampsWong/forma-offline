@@ -1,7 +1,9 @@
 import { headers } from "next/headers"
+import { redirect } from "next/navigation"
 import { cache } from "react"
 
 import { auth } from "@/lib/auth/auth"
+import { isBuildTime } from "@/lib/env"
 import { logger } from "@/lib/logger"
 
 export interface BetterAuthUser {
@@ -37,6 +39,8 @@ export const AUTH_ERRORS = {
  */
 export const getCurrentUser = cache(
   async (): Promise<AuthResponse | null> => {
+    if (isBuildTime()) return null
+
     const session = await auth.api.getSession({
       headers: await headers(),
     })
@@ -59,6 +63,10 @@ export const getCurrentUser = cache(
  * @returns The authenticated user session and data
  */
 export async function requireAuth(): Promise<AuthResponse> {
+  if (isBuildTime()) {
+    redirect("/sign-in")
+  }
+
   const currentUser = await getCurrentUser()
 
   if (!currentUser) {
@@ -79,6 +87,10 @@ type ActionResult<T> = ActionSuccess<T> | ActionError
 export async function withAuth<T>(
   fn: (userId: string) => Promise<T>
 ): Promise<ActionResult<T>> {
+  if (isBuildTime()) {
+    return { success: false, error: "Not available during build" }
+  }
+
   const { user } = await requireAuth()
 
   try {

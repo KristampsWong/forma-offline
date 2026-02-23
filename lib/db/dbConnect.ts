@@ -1,4 +1,5 @@
 import mongoose from "mongoose"
+import { isBuildTime } from "@/lib/env"
 
 interface MongooseCache {
   conn: typeof mongoose | null
@@ -19,7 +20,7 @@ if (!cached) {
 
 const MONGODB_URI = process.env.MONGODB_URI
 
-if (!MONGODB_URI) {
+if (!MONGODB_URI && !isBuildTime()) {
   throw new Error(
     "Please define the MONGODB_URI environment variable inside .env.local",
   )
@@ -38,6 +39,9 @@ if (!MONGODB_URI) {
  * @throws {Error} Throws an error if there's an issue connecting to the MongoDB database.
  */
 const dbConnect = async () => {
+  if (isBuildTime()) {
+    return mongoose
+  }
   if (cached.conn) {
     return cached.conn
   }
@@ -45,7 +49,7 @@ const dbConnect = async () => {
     const opts = {
       bufferCommands: false,
     }
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mg) => mg)
+    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mg) => mg)
   }
   try {
     cached.conn = await cached.promise

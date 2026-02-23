@@ -1,26 +1,33 @@
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import dbConnect from "../db/dbConnect";
+import { isBuildTime } from "@/lib/env";
 
-// Connect to MongoDB
-// Connect to MongoDB using cached connection pattern (avoids race conditions)
-const mongoose = await dbConnect()
+let auth: ReturnType<typeof betterAuth>
 
-// Get the native MongoDB database for Better Auth
-const db = mongoose.connection.getClient().db()
+if (!isBuildTime()) {
+  // Connect to MongoDB using cached connection pattern (avoids race conditions)
+  const mongoose = await dbConnect()
+  const db = mongoose.connection.getClient().db()
 
-export const auth = betterAuth({
-  database: mongodbAdapter(db),
-  socialProviders: {
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+  auth = betterAuth({
+    database: mongodbAdapter(db),
+    socialProviders: {
+      google: {
+        clientId: process.env.GOOGLE_CLIENT_ID!,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      },
     },
-  },
-  session: {
-    cookieCache: {
-      enabled: true,
-      maxAge: 60 * 5, // 5 minutes
+    session: {
+      cookieCache: {
+        enabled: true,
+        maxAge: 60 * 5, // 5 minutes
+      },
     },
-  },
-});
+  });
+} else {
+  // During build, auth is not functional — no requests are served
+  auth = {} as ReturnType<typeof betterAuth>
+}
+
+export { auth };
