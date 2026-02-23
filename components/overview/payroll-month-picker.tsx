@@ -31,9 +31,11 @@ const MIN_YEAR = 2025
 export default function PayrollMonthPicker({
   month,
   year,
+  onSelect,
 }: {
   month: number
   year: number
+  onSelect?: (month: number, year: number) => void
 }) {
   const router = useRouter()
   const [viewYear, setViewYear] = useState(year)
@@ -48,9 +50,12 @@ export default function PayrollMonthPicker({
   const currentYear = now.getFullYear()
 
   const handleMonthSelect = (selectedMonth: number) => {
-    // URL uses 01-12 for months (human readable, two digits)
-    const monthStr = String(selectedMonth + 1).padStart(2, "0")
-    router.push(`?month=${monthStr}&year=${viewYear}`, { scroll: false })
+    if (onSelect) {
+      onSelect(selectedMonth, viewYear)
+    } else {
+      const monthStr = String(selectedMonth + 1).padStart(2, "0")
+      router.push(`?month=${monthStr}&year=${viewYear}`, { scroll: false })
+    }
     setOpen(false)
   }
 
