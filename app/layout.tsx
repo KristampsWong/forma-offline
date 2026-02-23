@@ -1,14 +1,14 @@
 import type { Metadata } from "next"
-import { Zen_Kaku_Gothic_New, Geist_Mono } from "next/font/google"
+import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
 
 import { Toaster } from "@/components/ui/sonner"
 
-const zenKakuGothicNew = Zen_Kaku_Gothic_New({
+const geistSans = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "700"],
-  variable: "--font-zen-kaku-gothic-new",
 })
+
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -28,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${zenKakuGothicNew.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
         <Toaster />
