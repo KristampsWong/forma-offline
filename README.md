@@ -44,6 +44,7 @@ BETTER_AUTH_URL=http://localhost:3000
 MONGODB_URI=mongodb://localhost:27017/your-db
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
+ALLOWED_EMAIL=you@gmail.com              # Restrict access to this Google account
 ```
 
 ### 2. Set up Google OAuth
