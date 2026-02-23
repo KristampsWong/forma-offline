@@ -13,6 +13,20 @@ import {
   stateRateSchema,
 } from "@/lib/validation/company-schema"
 import Company from "@/models/company"
+import ExpenseCategory from "@/models/expense-category"
+
+const DEFAULT_EXPENSE_CATEGORIES = [
+  "Office Supplies",
+  "Software & Subscriptions",
+  "Travel",
+  "Meals & Entertainment",
+  "Professional Services",
+  "Utilities",
+  "Rent",
+  "Insurance",
+  "Marketing & Advertising",
+  "Equipment",
+]
 
 export async function checkNeedsOnboarding(): Promise<string | null> {
   const { user } = await requireAuth()
@@ -64,13 +78,21 @@ export async function createCompany(
     return { success: false, error: "Company already exists" }
   }
 
-  await Company.create({
+  const company = await Company.create({
     userId: user.id,
     name: parsed.data.name,
     ein: parsed.data.ein,
     address: parsed.data.address,
     payFrequency: parsed.data.payFrequency,
   })
+
+  // Seed default expense categories
+  await ExpenseCategory.insertMany(
+    DEFAULT_EXPENSE_CATEGORIES.map((name) => ({
+      companyId: company._id,
+      name,
+    }))
+  )
 
   return { success: true }
 }

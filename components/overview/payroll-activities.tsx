@@ -25,13 +25,6 @@ import PaycheckActionMenu from "@/components/employee/paycheck-action-menu"
 import PayrollMonthPicker from "@/components/overview/payroll-month-picker"
 import { Button } from "@/components/ui/button"
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
