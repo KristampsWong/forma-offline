@@ -27,8 +27,8 @@ function createAuth(db: Parameters<typeof mongodbAdapter>[0]) {
   return betterAuth({
     baseURL: baseUrl, // Use environment-aware base URL for cookies and redirects
     trustedOrigins: isTestMode()
-      ? ["http://localhost:3000"] // Allow both ports in test mode
-      : undefined, // Default behavior in production
+      ? ["http://localhost:3000"]
+      : [process.env.BETTER_AUTH_URL || "http://localhost:3000"],
     database: mongodbAdapter(db),
     socialProviders: {
       google: {
