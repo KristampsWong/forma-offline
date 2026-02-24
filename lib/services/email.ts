@@ -6,7 +6,9 @@ import {
 import { features } from "@/lib/config"
 import { logger } from "@/lib/logger"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+function getResendClient() {
+  return new Resend(process.env.RESEND_API_KEY)
+}
 
 export async function sendMagicLinkEmail({
   to,
@@ -23,7 +25,7 @@ export async function sendMagicLinkEmail({
   }
 
   try {
-    await resend.emails.send({
+    await getResendClient().emails.send({
       from: "Forma <noreply@forma.sh>", // Replace with your domain
       to,
       subject: "Sign in to your Forma account",
