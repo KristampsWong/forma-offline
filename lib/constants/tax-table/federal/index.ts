@@ -1,5 +1,6 @@
 import type { TaxYear } from "@/lib/constants/tax-rates"
 import { federalTaxTables2025 } from "./2025"
+import { federalTaxTables2026 } from "./2026"
 import type { FederalTaxTables } from "./types"
 
 export type { FederalTaxBracket, FederalTaxTables } from "./types"
@@ -9,7 +10,7 @@ export type { FederalTaxBracket, FederalTaxTables } from "./types"
  */
 const federalTaxTablesByYear: Record<number, FederalTaxTables> = {
   2025: federalTaxTables2025,
-  2026: federalTaxTables2025, // Placeholder until 2026 tables are published
+  2026: federalTaxTables2026,
 }
 
 /**
