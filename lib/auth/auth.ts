@@ -29,6 +29,9 @@ function createAuth(db: Parameters<typeof mongodbAdapter>[0]) {
     trustedOrigins: isTestMode()
       ? ["http://localhost:3000"]
       : [process.env.BETTER_AUTH_URL || "http://localhost:3000"],
+    advanced: {
+      useSecureCookies: true,
+    },
     database: mongodbAdapter(db),
     socialProviders: {
       google: {
