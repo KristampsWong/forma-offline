@@ -8,7 +8,7 @@ import { GoogleSignIn } from "@/components/auth/google-sign-in"
 import ErrorMessage from "@/components/error-message"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-export default function LoginPage() {
+export default function SignInPage() {
   const [email, setEmail] = useState("")
   const [code, setCode] = useState("")
   const [isLoading, setIsLoading] = useState(false)

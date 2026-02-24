@@ -1,16 +1,9 @@
 import crypto from "crypto"
 import { NextRequest, NextResponse } from "next/server"
 
-import { auth } from "@/auth"
-import {
-  createErrorResponse,
-  createRateLimitResponse,
-  getClientIp,
-  validateOrigin,
-} from "@/lib/auth/api-utils"
-import { features, security } from "@/lib/config"
+import { auth } from "@/lib/auth/auth"
+import { security } from "@/lib/config"
 import { logger } from "@/lib/logger"
-import { emailRatelimit } from "@/lib/services/ratelimit"
 import { redis } from "@/lib/services/redis"
 import { magicLinkRequestSchema } from "@/lib/validation/user-schema"
 
@@ -18,38 +11,15 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
 
-    // Layer 1: Input Validation (Zod)
     const validation = magicLinkRequestSchema.safeParse(body)
     if (!validation.success) {
-      return createErrorResponse(
-        validation.error.issues[0]?.message || "Invalid email format",
-        400
+      return NextResponse.json(
+        { error: validation.error.issues[0]?.message || "Invalid email format" },
+        { status: 400 }
       )
     }
 
     const { email } = validation.data
-
-    // Layer 2: Rate Limiting (email-based to prevent enumeration)
-    if (!features.skipRateLimitInTest) {
-      const { success, limit, remaining, reset } = await emailRatelimit.limit(
-        email // Already normalized by Zod (.toLowerCase())
-      )
-
-      if (!success) {
-        logger.warn(`[Rate Limit] Magic link request blocked for ${email}`)
-        return createRateLimitResponse(limit, remaining, reset)
-      }
-    }
-
-    // Layer 3: Origin Validation (prevent external requests)
-    if (!validateOrigin(request)) {
-      logger.warn(
-        `[Origin Validation] Invalid origin for magic link request: ${
-          request.headers.get("origin") || request.headers.get("referer") || "unknown"
-        }`
-      )
-      return createErrorResponse("Invalid origin", 403)
-    }
 
     // Generate device session ID for device tracking
     const deviceSessionId = crypto.randomBytes(32).toString("hex")
@@ -60,9 +30,9 @@ export async function POST(request: NextRequest) {
       JSON.stringify({
         email,
         createdAt: Date.now(),
-        ip: getClientIp(request),
+        ip: request.headers.get("x-forwarded-for") ?? "anonymous",
       }),
-      { ex: 300 } // 5 minutes
+      { ex: 300 }
     )
 
     // Call Better Auth's magic link API using server-side API
@@ -76,18 +46,20 @@ export async function POST(request: NextRequest) {
     })
 
     if (!result) {
-      return createErrorResponse("Failed to send magic link", 500)
+      return NextResponse.json(
+        { error: "Failed to send magic link" },
+        { status: 500 }
+      )
     }
 
     // Create response with HTTP-only cookie for device tracking
     const response = NextResponse.json({ success: true })
 
-    // Set HTTP-only cookie with device session ID
     response.cookies.set("device_session", deviceSessionId, {
       httpOnly: true,
       secure: security.secureCookies,
       sameSite: "lax",
-      maxAge: 300, // 5 minutes (same as magic link TTL)
+      maxAge: 300,
       path: "/",
     })
 
@@ -98,6 +70,9 @@ export async function POST(request: NextRequest) {
     return response
   } catch (error) {
     logger.error("[request-magic-link] Error:", error)
-    return createErrorResponse("Failed to process magic link request", 500)
+    return NextResponse.json(
+      { error: "Failed to process magic link request" },
+      { status: 500 }
+    )
   }
 }
