@@ -10,7 +10,7 @@ pnpm run build        # Production build
 pnpm run lint         # ESLint (flat config, eslint 9)
 ```
 
-No test framework is configured yet. Test mode infrastructure exists via `isTestMode()` and `NEXT_PUBLIC_PLAYWRIGHT_TEST` env var.
+Test mode infrastructure exists via `isTestMode()` and `NEXT_PUBLIC_PLAYWRIGHT_TEST` env var. Vitest is available.
 
 ## Architecture
 
@@ -18,7 +18,7 @@ No test framework is configured yet. Test mode infrastructure exists via `isTest
 
 ### Stack
 
-- **Auth**: Better Auth with Google OAuth, MongoDB adapter. No organization plugin — companies belong directly to users via `userId`.
+- **Auth**: Better Auth with Google OAuth + magic link email (via Resend), MongoDB adapter. Redis (ioredis, Docker) stores magic link tokens. `trustedOrigins` supports Tailscale access via `TAILSCALE_URL` env var. No organization plugin — companies belong directly to users via `userId`.
 - **Database**: MongoDB via Mongoose. Cached singleton connection in `lib/db/dbConnect.ts`. Always call `await dbConnect()` before queries in server actions.
 - **Styling**: Tailwind CSS 4 (OKLCH colors, dark mode via `.dark` class) + shadcn/ui (new-york style). Use `cn()` from `lib/utils` for class merging.
 - **Forms**: React Hook Form + Zod 4 resolvers. Dev mode pre-fills forms via `lib/config/index.ts` defaults.
@@ -89,7 +89,7 @@ No test framework is configured yet. Test mode infrastructure exists via `isTest
 ### Routing
 
 Route groups in `app/`:
-- `(auth)` — unauthenticated: `/sign-in`, `/api/auth/[...all]`
+- `(auth)` — unauthenticated: `/sign-in`, `/magic-link`, `/api/auth/[...all]`, `/api/auth/request-magic-link`, `/api/auth/get-magic-code`, `/api/auth/verify-magic-code`
 - `(dashboard)` — authenticated with sidebar layout, auth guard in layout via `getCurrentUser()`
 - Root `/` — auth check → onboarding (if no company) → redirect to `/overview`
 
@@ -101,7 +101,7 @@ Settings is a hash-routed dialog (`#settings/company`, `#settings/state-rates`) 
 
 ### Environment Variables
 
-Required (see `.env.example`): `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `MONGODB_URI`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`. Also needs `SSN_ENCRYPTION_KEY` (64-char hex).
+Required (see `.env.example`): `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `MONGODB_URI`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `SSN_ENCRYPTION_KEY` (64-char hex), `REDIS_URL` (default `redis://localhost:6379`), `RESEND_API_KEY`. Optional: `TAILSCALE_URL` for remote access via Tailscale.
 
 ## Conventions
 
