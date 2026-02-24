@@ -39,10 +39,14 @@ export const AUTH_ERRORS = {
  */
 export const getCurrentUser = cache(
   async (): Promise<AuthResponse | null> => {
+    // Call headers() BEFORE the build check — this tells Next.js the page is
+    // dynamic and must not be statically prerendered during `next build`.
+    const hdrs = await headers()
+
     if (isBuildTime()) return null
 
     const session = await auth.api.getSession({
-      headers: await headers(),
+      headers: hdrs,
     })
 
     if (!session?.user) {
