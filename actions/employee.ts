@@ -584,7 +584,7 @@ export async function updateEmployeePersonal(
         },
       },
     },
-    { new: true }
+    { returnDocument: 'after' }
   )
 
   if (!result) {
@@ -642,7 +642,7 @@ export async function updateEmployeeEmployment(
         position: data.position || undefined,
       },
     },
-    { new: true }
+    { returnDocument: 'after' }
   )
 
   if (!result) {
@@ -746,7 +746,7 @@ export async function updateEmployeeTax(
         stateTaxHistory: stateTaxHistoryEntry,
       },
     },
-    { new: true }
+    { returnDocument: 'after' }
   )
 
   if (!result) {
@@ -831,7 +831,7 @@ export async function updateEmployeeCompensation(
         payMethodHistory: payMethodHistoryEntry,
       },
     },
-    { new: true }
+    { returnDocument: 'after' }
   )
 
   if (!result) {
