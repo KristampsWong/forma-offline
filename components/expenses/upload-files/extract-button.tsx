@@ -1,26 +1,42 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Loader2, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 
-import { extractTransactions } from "@/actions/statementimports"
+import {
+  extractTransactions,
+  type StatementTransaction,
+} from "@/actions/statementimports"
 import { Button } from "@/components/ui/button"
+import { StatementTransactionsTable } from "@/components/expenses/statement-transactions-table"
 
-export default function ExtractButton({ importId }: { importId: string }) {
+interface ExtractPanelProps {
+  importId: string
+  initialStatus: string
+  initialTransactions: StatementTransaction[]
+}
+
+export default function ExtractPanel({
+  importId,
+  initialStatus,
+  initialTransactions,
+}: ExtractPanelProps) {
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
-
+  const [transactions, setTransactions] =
+    useState<StatementTransaction[]>(initialTransactions)
+  const [status, setStatus] = useState(initialStatus)
   async function handleExtract() {
     setLoading(true)
     try {
       const result = await extractTransactions(importId)
       if (result.success) {
         toast.success("Transactions extracted successfully")
-        router.refresh()
+        setTransactions(result.data)
+        setStatus("ready")
       } else {
         toast.error(result.error)
+        setStatus("failed")
       }
     } catch {
       toast.error("Something went wrong")
@@ -30,18 +46,25 @@ export default function ExtractButton({ importId }: { importId: string }) {
   }
 
   return (
-    <Button onClick={handleExtract} disabled={loading}>
-      {loading ? (
-        <>
-          <Loader2 className="size-4 animate-spin" />
-          Extracting...
-        </>
-      ) : (
-        <>
-          <Sparkles className="size-4" />
-          Extract Transactions
-        </>
+    <div className="space-y-4">
+      {(status === "uploaded" || status === "failed") && (
+        <Button onClick={handleExtract} disabled={loading}>
+          {loading ? (
+            <>
+              <Loader2 className="size-4 animate-spin" />
+              Extracting...
+            </>
+          ) : (
+            <>
+              <Sparkles className="size-4" />
+              Extract Transactions
+            </>
+          )}
+        </Button>
       )}
-    </Button>
+      {transactions.length > 0 && (
+        <StatementTransactionsTable transactions={transactions} />
+      )}
+    </div>
   )
 }

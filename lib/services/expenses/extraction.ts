@@ -74,7 +74,6 @@ export async function extractStatementTransactions(
         date: t.date,
         description: t.description,
         amount: t.amount,
-        type: t.type,
         categoryId: matchedId
           ? new mongoose.Types.ObjectId(matchedId)
           : undefined,

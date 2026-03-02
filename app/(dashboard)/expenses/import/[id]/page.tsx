@@ -5,8 +5,9 @@ import Breadcrumb, {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import PdfViewer from "@/components/expenses/pdf-viewer"
-import ExtractButton from "@/components/expenses/upload-files/extract-button"
+import ExtractPanel from "@/components/expenses/upload-files/extract-button"
 import { notFound } from "next/navigation"
+
 export default async function Page({
   params,
 }: {
@@ -38,8 +39,12 @@ export default async function Page({
         <div className="border rounded-lg overflow-hidden h-[calc(100vh-200px)]">
           <PdfViewer url={presignedUrl} />
         </div>
-        <div>
-          <ExtractButton importId={id} />
+        <div className="lg:col-span-2">
+          <ExtractPanel
+            importId={id}
+            initialStatus={result.data.status}
+            initialTransactions={result.data.transactions}
+          />
         </div>
       </div>
     </main>

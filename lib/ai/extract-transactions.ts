@@ -9,7 +9,6 @@ const TransactionSchema = z.object({
   date: z.string(),
   description: z.string(),
   amount: z.number().positive(),
-  type: z.enum(["debit", "credit"]),
   categoryName: z.string().optional(),
 })
 
@@ -56,7 +55,6 @@ For each transaction, provide:
 - date: The transaction date in MM/DD/YYYY format
 - description: A clean description of the transaction (merchant name or description)
 - amount: The transaction amount as a positive number
-- type: "debit" for charges/withdrawals, "credit" for deposits/payments received
 - categoryName: The best matching category from this list: [${categoryList}]. If no category is a good match, use Other.
 
 Return ONLY valid JSON in this exact format:
@@ -66,7 +64,6 @@ Return ONLY valid JSON in this exact format:
       "date": "01/15/2026",
       "description": "Starbucks Coffee",
       "amount": 5.75,
-      "type": "debit",
       "categoryName": "Food & Dining"
     }
   ]

@@ -4,7 +4,6 @@ export interface IExtractedTransaction {
   date: string
   description: string
   amount: number
-  type: "debit" | "credit"
   categoryId?: Types.ObjectId
   selected: boolean
 }
@@ -27,7 +26,6 @@ const ExtractedTransactionSchema = new Schema<IExtractedTransaction>(
     date: { type: String, required: true },
     description: { type: String, required: true },
     amount: { type: Number, required: true },
-    type: { type: String, enum: ["debit", "credit"], required: true },
     categoryId: { type: Schema.Types.ObjectId, ref: "ExpenseCategory" },
     selected: { type: Boolean, default: true },
   },
