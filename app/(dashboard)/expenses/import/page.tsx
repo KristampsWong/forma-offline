@@ -6,12 +6,8 @@ import Breadcrumb, {
 import { UploadExpenseDialog } from "@/components/expenses/upload-files/upload-expense-dialog"
 import {getStatementImports} from "@/actions/statementimports"
 import FileThumbnail from "@/components/expenses/upload-files/file-thunbsnail"
-export default async function ImportPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ [key: string]: string }>
-}) {
-  const { id } = await searchParams
+export default async function ImportPage() {
+ 
   const result = await getStatementImports()
   const files = result.success ? result.data : []
 

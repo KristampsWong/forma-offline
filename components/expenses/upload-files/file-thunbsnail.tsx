@@ -1,9 +1,17 @@
 import { FileText } from "lucide-react"
 import type { StatementImportListItem } from "@/actions/statementimports"
-
-export default function FileThumbnail({ fileName, status, createdAt }: StatementImportListItem) {
+import Link from "next/link"
+import { cn } from "@/lib/utils"
+import { buttonVariants } from "@/components/ui/button"
+export default function FileThumbnail({
+  _id,
+  fileName,
+  status,
+  createdAt,
+}: StatementImportListItem) {
+  const url = `/expenses/import/${_id}`
   return (
-    <div className="flex items-center gap-3 rounded-lg border p-3">
+    <Link className="p-3 flex justify-between gap-2 border rounded-lg hover:bg-card transition-colors duration-300" href={url}>
       <FileText className="size-8 shrink-0 text-muted-foreground" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{fileName}</p>
@@ -11,6 +19,6 @@ export default function FileThumbnail({ fileName, status, createdAt }: Statement
           {new Date(createdAt).toLocaleDateString()} · {status}
         </p>
       </div>
-    </div>
+    </Link>
   )
 }
