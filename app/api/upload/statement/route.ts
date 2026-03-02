@@ -51,18 +51,10 @@ export async function POST(request: Request) {
 
     const companyId = company._id.toString()
 
-    // Create the import record first to get the ID for the S3 key
-    const importRecord = await StatementImport.create({
-      companyId,
-      fileName: file.name,
-      s3Key: "", // will be set after we know the ID
-      status: "uploaded",
-      transactions: [],
-    })
+    // Upload to S3 first, then create the DB record
+    const importId = crypto.randomUUID()
+    const s3Key = `statements/${companyId}/${importId}.pdf`
 
-    const s3Key = `statements/${companyId}/${importRecord._id.toString()}.pdf`
-
-    // Upload to S3
     const buffer = Buffer.from(await file.arrayBuffer())
     const s3 = getS3Client()
 
@@ -75,9 +67,13 @@ export async function POST(request: Request) {
       })
     )
 
-    // Update the record with the S3 key
-    importRecord.s3Key = s3Key
-    await importRecord.save()
+    const importRecord = await StatementImport.create({
+      companyId,
+      fileName: file.name,
+      s3Key,
+      status: "uploaded",
+      transactions: [],
+    })
 
     return NextResponse.json({ importId: importRecord._id.toString() })
   } catch (error) {
