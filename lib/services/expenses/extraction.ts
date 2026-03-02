@@ -9,6 +9,7 @@ import { parseToUTCMidnight } from "@/lib/date/utils"
 import { createModuleLogger } from "@/lib/logger"
 import { getS3Bucket, getS3Client } from "@/lib/s3/client"
 import Company from "@/models/company"
+import Expense from "@/models/expense"
 import ExpenseCategory from "@/models/expense-category"
 import StatementImport from "@/models/statement-import"
 
@@ -137,4 +138,42 @@ export async function updateTransactionInImport(
   statementImport.transactions[index].amount = amount
   statementImport.transactions[index].categoryId = new mongoose.Types.ObjectId(data.categoryId)
   await statementImport.save()
+}
+
+export async function confirmStatementImportCore(
+  userId: string,
+  importId: string
+): Promise<void> {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId }).select("_id").lean()
+  if (!company) throw new Error(COMPANY_ERRORS.NOT_FOUND)
+
+  const statementImport = await StatementImport.findOne({
+    _id: importId,
+    companyId: company._id,
+  })
+  if (!statementImport) throw new Error(STATEMENT_IMPORT_ERRORS.NOT_FOUND)
+
+  if (statementImport.status !== "ready") {
+    throw new Error(STATEMENT_IMPORT_ERRORS.NOT_READY)
+  }
+
+  const expenses = statementImport.transactions.map((t) => ({
+    companyId: company._id,
+    categoryId: t.categoryId,
+    date: parseToUTCMidnight(t.date),
+    description: t.description,
+    amount: t.amount,
+    statementImportId: statementImport._id,
+  }))
+
+  await Expense.insertMany(expenses)
+
+  statementImport.status = "confirmed"
+  await statementImport.save()
+
+  log.info(
+    `Confirmed import ${importId}: created ${expenses.length} expenses`
+  )
 }
