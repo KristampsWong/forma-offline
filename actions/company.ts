@@ -26,6 +26,7 @@ const DEFAULT_EXPENSE_CATEGORIES = [
   "Insurance",
   "Marketing & Advertising",
   "Equipment",
+  "Other",
 ]
 
 export async function checkNeedsOnboarding(): Promise<string | null> {
