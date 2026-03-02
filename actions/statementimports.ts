@@ -1,14 +1,14 @@
 "use server"
 
 import { withAuth } from "@/lib/auth/auth-helpers"
-import { COMPANY_ERRORS } from "@/lib/constants/errors"
+import { COMPANY_ERRORS, STATEMENT_IMPORT_ERRORS } from "@/lib/constants/errors"
 import dbConnect from "@/lib/db/dbConnect"
+import { extractStatementTransactions } from "@/lib/services/expenses/extraction"
 import Company from "@/models/company"
 import StatementImport from "@/models/statement-import"
 import { GetObjectCommand } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 import { getS3Client, getS3Bucket } from "@/lib/s3/client"
-import { STATEMENT_IMPORT_ERRORS } from "@/lib/constants/errors"
 
 export interface StatementImportListItem {
   _id: string
@@ -74,5 +74,12 @@ export async function getStatementImportById(id: string) {
       status: doc.status,
       presignedUrl,
     } satisfies StatementImportDetail
+  })
+}
+
+export async function extractTransactions(importId: string) {
+  return withAuth(async (userId) => {
+    await extractStatementTransactions(userId, importId)
+    return { importId }
   })
 }

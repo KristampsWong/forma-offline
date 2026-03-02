@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import { Document, Page, pdfjs } from "react-pdf"
 import "react-pdf/dist/Page/AnnotationLayer.css"
 import "react-pdf/dist/Page/TextLayer.css"
@@ -17,10 +17,46 @@ export default function PdfViewerImpl({ url }: PdfViewerImplProps) {
   const [numPages, setNumPages] = useState<number>(0)
   const [pageNumber, setPageNumber] = useState(1)
   const [scale, setScale] = useState(0.75)
+  const [isDragging, setIsDragging] = useState(false)
+
+  const containerRef = useRef<HTMLDivElement>(null)
+  const dragStart = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 })
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages)
   }
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      const container = containerRef.current
+      if (!container) return
+      setIsDragging(true)
+      dragStart.current = {
+        x: e.clientX,
+        y: e.clientY,
+        scrollLeft: container.scrollLeft,
+        scrollTop: container.scrollTop,
+      }
+    },
+    []
+  )
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isDragging) return
+      const container = containerRef.current
+      if (!container) return
+      const dx = e.clientX - dragStart.current.x
+      const dy = e.clientY - dragStart.current.y
+      container.scrollLeft = dragStart.current.scrollLeft - dx
+      container.scrollTop = dragStart.current.scrollTop - dy
+    },
+    [isDragging]
+  )
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false)
+  }, [])
 
   return (
     <div className="flex flex-col h-full">
@@ -71,7 +107,15 @@ export default function PdfViewerImpl({ url }: PdfViewerImplProps) {
       </div>
 
       {/* PDF Document */}
-      <div className="flex-1 overflow-auto flex justify-center p-4 bg-muted/30 no-scrollbar">
+      <div
+        ref={containerRef}
+        className="flex-1 overflow-auto p-4 bg-muted/30 no-scrollbar select-none"
+        style={{ cursor: isDragging ? "grabbing" : "grab" }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
         <Document
           file={url}
           onLoadSuccess={onDocumentLoadSuccess}

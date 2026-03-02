@@ -5,14 +5,14 @@ import Breadcrumb, {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import PdfViewer from "@/components/expenses/pdf-viewer"
+import ExtractButton from "@/components/expenses/upload-files/extract-button"
 import { notFound } from "next/navigation"
-
 export default async function Page({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
-  const { id } = await params
+  const { id } = await params //StaticImport Model/Table id
 
   const result = await getStatementImportById(id)
   if (!result.success) notFound()
@@ -38,7 +38,9 @@ export default async function Page({
         <div className="border rounded-lg overflow-hidden h-[calc(100vh-200px)]">
           <PdfViewer url={presignedUrl} />
         </div>
-        <div>{/* Reserved for future transaction extraction UI */}</div>
+        <div>
+          <ExtractButton importId={id} />
+        </div>
       </div>
     </main>
   )

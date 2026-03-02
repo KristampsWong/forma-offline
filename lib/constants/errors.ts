@@ -114,6 +114,8 @@ export const STATEMENT_IMPORT_ERRORS = {
   FILE_TOO_LARGE: "File size must be under 10MB",
   UPLOAD_FAILED: "Failed to upload file",
   ALREADY_CONFIRMED: "This import has already been confirmed",
+  EXTRACTION_FAILED: "Failed to extract transactions from statement",
+  NOT_UPLOADED: "Extraction can only be performed on uploaded statements",
 } as const
 
 /**
