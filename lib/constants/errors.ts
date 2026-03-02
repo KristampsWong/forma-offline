@@ -116,6 +116,8 @@ export const STATEMENT_IMPORT_ERRORS = {
   ALREADY_CONFIRMED: "This import has already been confirmed",
   EXTRACTION_FAILED: "Failed to extract transactions from statement",
   NOT_UPLOADED: "Extraction can only be performed on uploaded statements",
+  INVALID_TRANSACTION_INDEX: "Invalid transaction index",
+  NOT_READY: "Import must be in ready status to confirm",
 } as const
 
 /**

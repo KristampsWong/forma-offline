@@ -3,8 +3,9 @@ import mongoose from "mongoose"
 
 import { extractTransactionsFromPDF } from "@/lib/ai/extract-transactions"
 import type { ExtractedTransactionRaw } from "@/lib/ai/extract-transactions"
-import { COMPANY_ERRORS, STATEMENT_IMPORT_ERRORS } from "@/lib/constants/errors"
+import { COMPANY_ERRORS, EXPENSE_ERRORS, STATEMENT_IMPORT_ERRORS } from "@/lib/constants/errors"
 import dbConnect from "@/lib/db/dbConnect"
+import { parseToUTCMidnight } from "@/lib/date/utils"
 import { createModuleLogger } from "@/lib/logger"
 import { getS3Bucket, getS3Client } from "@/lib/s3/client"
 import Company from "@/models/company"
@@ -102,4 +103,38 @@ export async function extractStatementTransactions(
 
     throw error
   }
+}
+
+export async function updateTransactionInImport(
+  userId: string,
+  importId: string,
+  index: number,
+  data: { date: string; categoryId: string; description: string; amount: string }
+): Promise<void> {
+  await dbConnect()
+
+  const company = await Company.findOne({ userId }).select("_id").lean()
+  if (!company) throw new Error(COMPANY_ERRORS.NOT_FOUND)
+
+  const statementImport = await StatementImport.findOne({
+    _id: importId,
+    companyId: company._id,
+  })
+  if (!statementImport) throw new Error(STATEMENT_IMPORT_ERRORS.NOT_FOUND)
+
+  if (index < 0 || index >= statementImport.transactions.length) {
+    throw new Error(STATEMENT_IMPORT_ERRORS.INVALID_TRANSACTION_INDEX)
+  }
+
+  const parsedDate = parseToUTCMidnight(data.date)
+  if (!parsedDate) throw new Error(EXPENSE_ERRORS.INVALID_DATE)
+
+  const amount = parseFloat(data.amount)
+  if (isNaN(amount) || amount <= 0) throw new Error(EXPENSE_ERRORS.INVALID_AMOUNT)
+
+  statementImport.transactions[index].date = data.date
+  statementImport.transactions[index].description = data.description.trim()
+  statementImport.transactions[index].amount = amount
+  statementImport.transactions[index].categoryId = new mongoose.Types.ObjectId(data.categoryId)
+  await statementImport.save()
 }
