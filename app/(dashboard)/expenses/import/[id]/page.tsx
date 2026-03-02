@@ -1,4 +1,7 @@
-import { getStatementImportById } from "@/actions/statementimports"
+import {
+  getStatementImportById,
+} from "@/actions/statementimports"
+import { getExpenseCategories } from "@/actions/expenses"
 import Header from "@/components/header"
 import Breadcrumb, {
   BreadcrumbLink,
@@ -13,12 +16,18 @@ export default async function Page({
 }: {
   params: Promise<{ id: string }>
 }) {
-  const { id } = await params //StaticImport Model/Table id
+  const { id } = await params
 
-  const result = await getStatementImportById(id)
+  const [result, categoriesResult] = await Promise.all([
+    getStatementImportById(id),
+    getExpenseCategories(),
+  ])
   if (!result.success) notFound()
 
   const { fileName, presignedUrl } = result.data
+  const categories = categoriesResult.success
+    ? categoriesResult.data.map((c) => ({ value: c._id, label: c.name }))
+    : []
 
   return (
     <main className="p-4 max-w-7xl mx-auto space-y-8 w-full">
@@ -44,6 +53,7 @@ export default async function Page({
             importId={id}
             initialStatus={result.data.status}
             initialTransactions={result.data.transactions}
+            categories={categories}
           />
         </div>
       </div>
