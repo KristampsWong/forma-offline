@@ -1,5 +1,6 @@
 import type { TaxYear } from "@/lib/constants/tax-rates"
 import { californiaTaxTables2025 } from "./2025"
+import { californiaTaxTables2026 } from "./2026"
 import type { CaliforniaTaxTables } from "./types"
 
 export type {
@@ -17,7 +18,7 @@ export { getNumberOfPayPeriods } from "./types"
  */
 const californiaTaxTablesByYear: Record<number, CaliforniaTaxTables> = {
   2025: californiaTaxTables2025,
-  2026: californiaTaxTables2025, // Placeholder until 2026 tables are published
+  2026: californiaTaxTables2026,
 }
 
 /**

@@ -1,5 +1,7 @@
 import { taxRates2025 } from "./2025"
+import { taxRates2026 } from "./2026"
 import type { TaxRates, TaxYear } from "./types"
+import { logger } from "@/lib/logger"
 
 export type {
   CaliforniaTaxRates,
@@ -14,7 +16,7 @@ export type {
  */
 const taxRatesByYear: Record<TaxYear, TaxRates> = {
   2025: taxRates2025,
-  2026: taxRates2025, // Placeholder: use 2025 rates until 2026 rates are published
+  2026: taxRates2026,
 }
 
 /**
@@ -61,7 +63,7 @@ export function getTaxRates(payPeriodStartDate: string | Date): TaxRates {
     const mostRecentYear = availableYears[0] as TaxYear
 
     if (year > mostRecentYear) {
-      console.warn(
+      logger.warn(
         `Tax rates for ${year} not yet available, using ${mostRecentYear} rates`,
       )
       return taxRatesByYear[mostRecentYear]
