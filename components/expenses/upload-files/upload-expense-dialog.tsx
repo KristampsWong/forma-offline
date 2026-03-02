@@ -1,6 +1,6 @@
 "use client"
 
-import { FileUp, Loader2, X } from "lucide-react"
+import { FileUp, Loader2, Upload, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useCallback, useRef, useState } from "react"
 import type { DragEvent } from "react"
@@ -14,19 +14,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 
-interface UploadExpenseDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}
-
-export function UploadExpenseDialog({
-  open,
-  onOpenChange,
-}: UploadExpenseDialogProps) {
+export function UploadExpenseDialog() {
   const router = useRouter()
+  const [open, setOpen] = useState(false)
   const [files, setFiles] = useState<File[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -86,7 +80,7 @@ export function UploadExpenseDialog({
 
       toast.success("Statement uploaded successfully")
       setFiles([])
-      onOpenChange(false)
+      setOpen(false)
       router.push(`/expenses/import?id=${importId}`)
     } catch (error) {
       toast.error(
@@ -100,11 +94,17 @@ export function UploadExpenseDialog({
   const handleOpenChange = (nextOpen: boolean) => {
     if (isUploading) return
     if (!nextOpen) setFiles([])
-    onOpenChange(nextOpen)
+    setOpen(nextOpen)
   }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          <Upload className="size-4" />
+          Upload Statement
+        </Button>
+      </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Upload Bank Statement</DialogTitle>
