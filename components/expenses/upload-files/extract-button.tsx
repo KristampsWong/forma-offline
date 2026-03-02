@@ -15,17 +15,20 @@ interface ExtractPanelProps {
   importId: string
   initialStatus: string
   initialTransactions: StatementTransaction[]
+  categories: { value: string; label: string }[]
 }
 
 export default function ExtractPanel({
   importId,
   initialStatus,
   initialTransactions,
+  categories,
 }: ExtractPanelProps) {
   const [loading, setLoading] = useState(false)
   const [transactions, setTransactions] =
     useState<StatementTransaction[]>(initialTransactions)
   const [status, setStatus] = useState(initialStatus)
+
   async function handleExtract() {
     setLoading(true)
     try {
@@ -43,6 +46,16 @@ export default function ExtractPanel({
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleTransactionUpdate(index: number, updated: StatementTransaction) {
+    setTransactions((prev) =>
+      prev.map((t, i) => (i === index ? updated : t))
+    )
+  }
+
+  function handleConfirm() {
+    setStatus("confirmed")
   }
 
   return (
@@ -63,7 +76,14 @@ export default function ExtractPanel({
         </Button>
       )}
       {transactions.length > 0 && (
-        <StatementTransactionsTable transactions={transactions} />
+        <StatementTransactionsTable
+          importId={importId}
+          transactions={transactions}
+          categories={categories}
+          status={status}
+          onTransactionUpdate={handleTransactionUpdate}
+          onConfirm={handleConfirm}
+        />
       )}
     </div>
   )
