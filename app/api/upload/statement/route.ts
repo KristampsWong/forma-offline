@@ -51,9 +51,10 @@ export async function POST(request: Request) {
 
     const companyId = company._id.toString()
 
-    // Upload to S3 first, then create the DB record
-    const importId = crypto.randomUUID()
-    const s3Key = `statements/${companyId}/${importId}.pdf`
+    // Build S3 key from filename + timestamp
+    const baseName = file.name.replace(/\.pdf$/i, "").replace(/[^a-zA-Z0-9_-]/g, "_")
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-")
+    const s3Key = `statements/${companyId}/${baseName}_${timestamp}.pdf`
 
     const buffer = Buffer.from(await file.arrayBuffer())
     const s3 = getS3Client()
