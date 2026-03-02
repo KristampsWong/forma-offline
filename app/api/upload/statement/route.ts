@@ -51,10 +51,7 @@ export async function POST(request: Request) {
 
     const companyId = company._id.toString()
 
-    // Build S3 key from filename + timestamp
-    const baseName = file.name.replace(/\.pdf$/i, "").replace(/[^a-zA-Z0-9_-]/g, "_")
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-")
-    const s3Key = `statements/${companyId}/${baseName}_${timestamp}.pdf`
+    const s3Key = `statements/${companyId}/${crypto.randomUUID()}.pdf`
 
     const buffer = Buffer.from(await file.arrayBuffer())
     const s3 = getS3Client()
