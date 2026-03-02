@@ -34,6 +34,7 @@ interface ExpenseFormDialogProps {
   onOpenChange: (open: boolean) => void
   categories: { value: string; label: string }[]
   expense?: ExpenseListItem
+  onSubmitOverride?: (data: CreateExpenseInput) => Promise<void>
 }
 
 export function ExpenseFormDialog({
@@ -41,6 +42,7 @@ export function ExpenseFormDialog({
   onOpenChange,
   categories,
   expense,
+  onSubmitOverride,
 }: ExpenseFormDialogProps) {
   const isEdit = !!expense
 
@@ -65,6 +67,13 @@ export function ExpenseFormDialog({
 
   const onSubmit = async (data: CreateExpenseInput) => {
     try {
+      if (onSubmitOverride) {
+        await onSubmitOverride(data)
+        form.reset()
+        onOpenChange(false)
+        return
+      }
+
       const result = isEdit
         ? await updateExpense(expense._id, data)
         : await createExpense(data)
