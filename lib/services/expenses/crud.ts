@@ -71,7 +71,7 @@ export async function renameCategoryCore(
   const category = await ExpenseCategory.findOneAndUpdate(
     { _id: categoryId, companyId },
     { $set: { name: name.trim() } },
-    { new: true }
+    { returnDocument: 'after' }
   ).lean()
 
   if (!category) throw new Error(EXPENSE_CATEGORY_ERRORS.NOT_FOUND)
@@ -191,7 +191,7 @@ export async function updateExpenseCore(
         notes: data.notes?.trim() || undefined,
       },
     },
-    { new: true }
+    { returnDocument: 'after' }
   ).lean()
 
   if (!expense) throw new Error(EXPENSE_ERRORS.NOT_FOUND)

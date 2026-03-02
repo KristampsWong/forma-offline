@@ -54,7 +54,7 @@ export async function markFilingAsFiledCore(
     const result = await De9.findOneAndUpdate(
       companyFilter,
       { status: "filed", filedAt: filedDateValue },
-      { new: true },
+      { returnDocument: 'after' },
     )
     if (!result) throw new Error("Filing not found")
     quarter = result.quarter
@@ -63,7 +63,7 @@ export async function markFilingAsFiledCore(
     const result = await De9c.findOneAndUpdate(
       companyFilter,
       { status: "filed", filedAt: filedDateValue },
-      { new: true },
+      { returnDocument: 'after' },
     )
     if (!result) throw new Error("Filing not found")
     // DE9C has no associated payments
@@ -72,7 +72,7 @@ export async function markFilingAsFiledCore(
     const result = await Form941.findOneAndUpdate(
       companyFilter,
       { filingStatus: "filed", filedDate: filedDateValue },
-      { new: true },
+      { returnDocument: 'after' },
     )
     if (!result) throw new Error("Filing not found")
     quarter = result.quarter
@@ -82,7 +82,7 @@ export async function markFilingAsFiledCore(
     const result = await Form940.findOneAndUpdate(
       companyFilter,
       { filingStatus: "filed", filedDate: filedDateValue },
-      { new: true },
+      { returnDocument: 'after' },
     )
     if (!result) throw new Error("Filing not found")
     year = result.year

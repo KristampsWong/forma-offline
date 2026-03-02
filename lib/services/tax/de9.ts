@@ -199,7 +199,7 @@ export async function createOrUpdateDe9FormData(
           status: "computed",
         },
       },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after' },
     )
 
     return { success: true }

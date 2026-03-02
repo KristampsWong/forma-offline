@@ -128,7 +128,7 @@ export async function createOrUpdateDe9cFormData(
           status: "computed",
         },
       },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after' },
     )
 
     return { success: true }

@@ -246,7 +246,7 @@ export async function syncAllTaxPaymentsFromApprovedPayrolls(
           status: "pending",
         },
       },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after' },
     )
 
     // 2. Federal 940 (quarterly deposit)
@@ -314,7 +314,7 @@ export async function syncAllTaxPaymentsFromApprovedPayrolls(
           status: "pending",
         },
       },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after' },
     )
 
     // 3. CA PIT/SDI (monthly deposit)
@@ -342,7 +342,7 @@ export async function syncAllTaxPaymentsFromApprovedPayrolls(
           status: "pending",
         },
       },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after' },
     )
 
     // 4. CA SUI/ETT (quarterly)
@@ -369,7 +369,7 @@ export async function syncAllTaxPaymentsFromApprovedPayrolls(
           status: "pending",
         },
       },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after' },
     )
 
     return {

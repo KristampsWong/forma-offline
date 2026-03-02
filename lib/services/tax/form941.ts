@@ -419,7 +419,7 @@ export async function createOrUpdateForm941FromApprovedPayrolls(
           isAmended: false,
         },
       },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after' },
     )
 
     // Preserve filingStatus — only update if "draft"
