@@ -1,9 +1,15 @@
 "use server"
 
+import { revalidatePath } from "next/cache"
+
 import { withAuth } from "@/lib/auth/auth-helpers"
 import { COMPANY_ERRORS, STATEMENT_IMPORT_ERRORS } from "@/lib/constants/errors"
 import dbConnect from "@/lib/db/dbConnect"
-import { extractStatementTransactions } from "@/lib/services/expenses/extraction"
+import {
+  extractStatementTransactions,
+  updateTransactionInImport,
+  confirmStatementImportCore,
+} from "@/lib/services/expenses/extraction"
 import Company from "@/models/company"
 import ExpenseCategory from "@/models/expense-category"
 import StatementImport from "@/models/statement-import"
@@ -152,5 +158,37 @@ export async function extractTransactions(importId: string) {
         selected: t.selected,
       })
     )
+  })
+}
+
+export async function updateStatementTransaction(
+  importId: string,
+  index: number,
+  data: { date: string; categoryId: string; description: string; amount: string }
+) {
+  return withAuth(async (userId) => {
+    await updateTransactionInImport(userId, importId, index, data)
+
+    // Return updated transaction with resolved category name
+    await dbConnect()
+    const category = await ExpenseCategory.findById(data.categoryId)
+      .select("name")
+      .lean()
+
+    return {
+      date: data.date,
+      description: data.description.trim(),
+      amount: parseFloat(data.amount),
+      categoryName: category?.name,
+      selected: true,
+    } satisfies StatementTransaction
+  })
+}
+
+export async function confirmStatementImport(importId: string) {
+  return withAuth(async (userId) => {
+    await confirmStatementImportCore(userId, importId)
+    revalidatePath("/expenses")
+    return { confirmed: true }
   })
 }
