@@ -8,6 +8,7 @@ export interface IExpense {
   amount: number
   vendor?: string
   notes?: string
+  statementImportId?: Types.ObjectId
   createdAt: Date
   updatedAt: Date
 }
@@ -47,6 +48,10 @@ const ExpenseSchema = new Schema<ExpenseDocument>(
     notes: {
       type: String,
       trim: true,
+    },
+    statementImportId: {
+      type: Schema.Types.ObjectId,
+      ref: "StatementImport",
     },
   },
   { timestamps: true }

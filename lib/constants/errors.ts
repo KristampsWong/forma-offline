@@ -106,6 +106,21 @@ export const EXPENSE_ERRORS = {
 
 
 /**
+ * Statement Import Errors
+ */
+export const STATEMENT_IMPORT_ERRORS = {
+  NOT_FOUND: "Statement import not found",
+  INVALID_FILE_TYPE: "Only PDF files are accepted",
+  FILE_TOO_LARGE: "File size must be under 10MB",
+  UPLOAD_FAILED: "Failed to upload file",
+  ALREADY_CONFIRMED: "This import has already been confirmed",
+  EXTRACTION_FAILED: "Failed to extract transactions from statement",
+  NOT_UPLOADED: "Extraction can only be performed on uploaded statements",
+  INVALID_TRANSACTION_INDEX: "Invalid transaction index",
+  NOT_READY: "Import must be in ready status to confirm",
+} as const
+
+/**
  * Generic Errors
  */
 export const GENERIC_ERRORS = {
@@ -124,5 +139,6 @@ export const ERRORS = {
   EMPLOYEE: EMPLOYEE_ERRORS,
   PAYROLL: PAYROLL_ERRORS,
   STATE_RATE: STATE_RATE_ERRORS,
+  STATEMENT_IMPORT: STATEMENT_IMPORT_ERRORS,
   GENERIC: GENERIC_ERRORS,
 } as const
