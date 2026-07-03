@@ -2,6 +2,16 @@ import path from "node:path"
 import { logger } from "@/lib/logger"
 import type { PdfFormConfig, PdfFormType, PdfFormYear } from "./types"
 
+export {
+  type Form940FieldMap,
+  FORM_940_FIELDS_BY_REVISION,
+  getForm940Fields,
+} from "./form940-fields"
+export {
+  type Form941FieldMap,
+  FORM_941_FIELDS_BY_REVISION,
+  getForm941Fields,
+} from "./form941-fields"
 export type { PdfFormConfig, PdfFormType, PdfFormYear } from "./types"
 
 /**
@@ -29,7 +39,7 @@ const formConfigs: Record<PdfFormType, PdfFormConfig> = {
  */
 const availableYears: Record<PdfFormType, PdfFormYear[]> = {
   "940": [2025],
-  "941": [2025],
+  "941": [2025, 2026],
   W4: [2025],
 }
 
@@ -52,17 +62,25 @@ export function getPdfFormPath(formType: PdfFormType, year: number): string {
     )
   }
 
-  const effectiveYear = getEffectiveYear(formType, year)
+  const effectiveYear = getEffectiveFormYear(formType, year)
   const filename = `${effectiveYear}${config.suffix}.pdf`
 
   return path.join(process.cwd(), "public", "forms", config.folder, filename)
 }
 
 /**
- * Get the effective year to use for a form
- * Falls back to most recent available year if requested year is not available
+ * Get the effective PDF year to use for a form.
+ * Falls back to the most recent available year if the requested year has no
+ * template (and to the oldest available year for years older than any template).
+ *
+ * This is the year of the PDF actually loaded - always pass it (not the raw
+ * tax year) when resolving version-specific field names, so the field-name map
+ * matches the PDF on disk.
  */
-function getEffectiveYear(formType: PdfFormType, year: number): number {
+export function getEffectiveFormYear(
+  formType: PdfFormType,
+  year: number,
+): number {
   const years = availableYears[formType]
   if (!years || years.length === 0) {
     throw new Error(`No PDF templates available for form type: ${formType}`)

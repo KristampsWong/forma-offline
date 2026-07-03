@@ -2,7 +2,11 @@ import fs from "node:fs"
 import { type NextRequest, NextResponse } from "next/server"
 import { PDFDocument, type PDFForm } from "pdf-lib"
 import { getForm941FilingById } from "@/actions/taxes"
-import { getPdfFormPath } from "@/lib/constants/pdf-forms"
+import {
+  getEffectiveFormYear,
+  getForm941Fields,
+  getPdfFormPath,
+} from "@/lib/constants/pdf-forms"
 import { logger } from "@/lib/logger"
 
 export async function GET(req: NextRequest) {
@@ -26,6 +30,12 @@ export async function GET(req: NextRequest) {
     }
 
     const { form941, company } = result.data
+
+    // Every PDF field name comes from a version-specific map resolved by the
+    // PDF revision year (not the raw tax year), so the names always match the
+    // template actually loaded on disk.
+    const effectiveYear = getEffectiveFormYear("941", form941.year)
+    const fields = getForm941Fields(effectiveYear)
 
     // Extract quarter number from "Q1", "Q2", etc.
     const quarterNumber = form941.quarter.replace("Q", "")
@@ -91,94 +101,52 @@ export async function GET(req: NextRequest) {
     const overpayment = form941.overpayment
 
     // ===== Fill PDF Form =====
+    // All field names come from the version-specific map (`fields`); this route
+    // never hardcodes a field name.
 
-    // EIN fields (Page 1)
-    const einFields = [
-      "topmostSubform[0].Page1[0].Header[0].EntityArea[0].f1_1[0]",
-      "topmostSubform[0].Page1[0].Header[0].EntityArea[0].f1_2[0]",
-    ]
+    const einParts = [ein.slice(0, 2), ein.slice(2)]
+    const quarterIndex = parseInt(quarterNumber, 10) - 1
 
-    const parts = [ein.slice(0, 2), ein.slice(2)]
-    parts.forEach((val, i) => {
-      form.getTextField(einFields[i]).setText(val)
-    })
-
-    // Company name
-    form
-      .getTextField(
-        "topmostSubform[0].Page1[0].Header[0].EntityArea[0].f1_3[0]",
-      )
-      .setText(companyName)
-
-    // Address
-    form
-      .getTextField(
-        "topmostSubform[0].Page1[0].Header[0].EntityArea[0].f1_5[0]",
-      )
-      .setText(address)
-
-    // City
-    form
-      .getTextField(
-        "topmostSubform[0].Page1[0].Header[0].EntityArea[0].f1_6[0]",
-      )
-      .setText(city)
-
-    // State
-    form
-      .getTextField(
-        "topmostSubform[0].Page1[0].Header[0].EntityArea[0].f1_7[0]",
-      )
-      .setText(state)
-
-    // Zip Code
-    form
-      .getTextField(
-        "topmostSubform[0].Page1[0].Header[0].EntityArea[0].f1_8[0]",
-      )
-      .setText(zip)
+    // Page 1 - Entity area
+    form.getTextField(fields.einPart1).setText(einParts[0])
+    form.getTextField(fields.einPart2).setText(einParts[1])
+    form.getTextField(fields.companyName).setText(companyName)
+    form.getTextField(fields.addressLine).setText(address)
+    form.getTextField(fields.city).setText(city)
+    form.getTextField(fields.state).setText(state)
+    form.getTextField(fields.zip).setText(zip)
 
     // Quarter checkbox
-    const quarterCheckBox = form.getCheckBox(
-      `topmostSubform[0].Page1[0].Header[0].ReportForQuarter[0].c1_1[${
-        parseInt(quarterNumber, 10) - 1
-      }]`,
-    )
-    quarterCheckBox.check()
+    form.getCheckBox(`${fields.quarterCheckboxPrefix}[${quarterIndex}]`).check()
 
     // Line 1 - Number of employees
     form
-      .getTextField("topmostSubform[0].Page1[0].f1_12[0]")
+      .getTextField(fields.line1NumEmployees)
       .setText(numberOfEmployees.toString())
 
     // Line 2 - Total wages
-    fillCurrencyField(
-      form,
-      wage,
-      "topmostSubform[0].Page1[0].f1_13[0]",
-      "topmostSubform[0].Page1[0].f1_14[0]",
-    )
+    fillCurrencyField(form, wage, fields.line2WagesInt, fields.line2WagesDec)
 
     // Line 3 - Federal income tax withheld
     fillCurrencyField(
       form,
       federalIncomeTaxWithheld,
-      "topmostSubform[0].Page1[0].f1_15[0]",
-      "topmostSubform[0].Page1[0].f1_16[0]",
+      fields.line3FitwInt,
+      fields.line3FitwDec,
     )
 
     // Line 5a - Social Security wages and tax
     fillCurrencyField(
       form,
       socialSecurityWages,
-      "topmostSubform[0].Page1[0].f1_17[0]",
-      "topmostSubform[0].Page1[0].f1_18[0]",
+      fields.line5aSsWagesInt,
+      fields.line5aSsWagesDec,
     )
     fillCurrencyField(
       form,
       socialSecurityTax,
-      "topmostSubform[0].Page1[0].f1_19[0]",
-      "topmostSubform[0].Page1[0].f1_20[0]",
+      fields.line5aSsTaxInt,
+      fields.line5aSsTaxDec,
     )
 
     // Line 5b - Social Security tips (if any)
@@ -186,14 +154,14 @@ export async function GET(req: NextRequest) {
       fillCurrencyField(
         form,
         socialSecurityTips,
-        "topmostSubform[0].Page1[0].f1_21[0]",
-        "topmostSubform[0].Page1[0].f1_22[0]",
+        fields.line5bSsTipsInt,
+        fields.line5bSsTipsDec,
       )
       fillCurrencyField(
         form,
         socialSecurityTipsTax,
-        "topmostSubform[0].Page1[0].f1_23[0]",
-        "topmostSubform[0].Page1[0].f1_24[0]",
+        fields.line5bSsTipsTaxInt,
+        fields.line5bSsTipsTaxDec,
       )
     }
 
@@ -201,14 +169,14 @@ export async function GET(req: NextRequest) {
     fillCurrencyField(
       form,
       medicareWages,
-      "topmostSubform[0].Page1[0].f1_25[0]",
-      "topmostSubform[0].Page1[0].f1_26[0]",
+      fields.line5cMedWagesInt,
+      fields.line5cMedWagesDec,
     )
     fillCurrencyField(
       form,
       medicareTax,
-      "topmostSubform[0].Page1[0].f1_27[0]",
-      "topmostSubform[0].Page1[0].f1_28[0]",
+      fields.line5cMedTaxInt,
+      fields.line5cMedTaxDec,
     )
 
     // Line 5d - Additional Medicare Tax (if any)
@@ -216,14 +184,14 @@ export async function GET(req: NextRequest) {
       fillCurrencyField(
         form,
         additionalMedicareWages,
-        "topmostSubform[0].Page1[0].f1_29[0]",
-        "topmostSubform[0].Page1[0].f1_30[0]",
+        fields.line5dAddlMedWagesInt,
+        fields.line5dAddlMedWagesDec,
       )
       fillCurrencyField(
         form,
         additionalMedicareTax,
-        "topmostSubform[0].Page1[0].f1_31[0]",
-        "topmostSubform[0].Page1[0].f1_32[0]",
+        fields.line5dAddlMedTaxInt,
+        fields.line5dAddlMedTaxDec,
       )
     }
 
@@ -231,16 +199,16 @@ export async function GET(req: NextRequest) {
     fillCurrencyField(
       form,
       totalSocialAndMedicare,
-      "topmostSubform[0].Page1[0].f1_33[0]",
-      "topmostSubform[0].Page1[0].f1_34[0]",
+      fields.line5eTotalInt,
+      fields.line5eTotalDec,
     )
 
     // Line 6 - Total taxes before adjustments
     fillCurrencyField(
       form,
       totalTaxBeforeAdjustments,
-      "topmostSubform[0].Page1[0].f1_37[0]",
-      "topmostSubform[0].Page1[0].f1_38[0]",
+      fields.line6Int,
+      fields.line6Dec,
     )
 
     // Line 7 - Current quarter adjustments
@@ -248,8 +216,8 @@ export async function GET(req: NextRequest) {
       fillCurrencyField(
         form,
         currentQuarterAdjustments,
-        "topmostSubform[0].Page1[0].f1_39[0]",
-        "topmostSubform[0].Page1[0].f1_40[0]",
+        fields.line7Int,
+        fields.line7Dec,
       )
     }
 
@@ -257,36 +225,26 @@ export async function GET(req: NextRequest) {
     fillCurrencyField(
       form,
       totalTaxesAfterAdjustments,
-      "topmostSubform[0].Page1[0].f1_45[0]",
-      "topmostSubform[0].Page1[0].f1_46[0]",
+      fields.line10Int,
+      fields.line10Dec,
     )
 
     // Line 12 - Total taxes after adjustments and credits
     fillCurrencyField(
       form,
       totalTaxesAfterAdjustmentsAndCredits,
-      "topmostSubform[0].Page1[0].f1_49[0]",
-      "topmostSubform[0].Page1[0].f1_50[0]",
+      fields.line12Int,
+      fields.line12Dec,
     )
 
     // Line 13 - Total deposits
     if (totalDeposits > 0) {
-      fillCurrencyField(
-        form,
-        totalDeposits,
-        "topmostSubform[0].Page1[0].f1_51[0]",
-        "topmostSubform[0].Page1[0].f1_52[0]",
-      )
+      fillCurrencyField(form, totalDeposits, fields.line13Int, fields.line13Dec)
     }
 
     // Line 14 - Balance due
     if (balanceDue > 0) {
-      fillCurrencyField(
-        form,
-        balanceDue,
-        "topmostSubform[0].Page1[0].f1_53[0]",
-        "topmostSubform[0].Page1[0].f1_54[0]",
-      )
+      fillCurrencyField(form, balanceDue, fields.line14Int, fields.line14Dec)
     }
 
     // Line 15 - Overpayment
@@ -294,26 +252,16 @@ export async function GET(req: NextRequest) {
       fillCurrencyField(
         form,
         overpayment,
-        "topmostSubform[0].Page1[0].f1_55[0]",
-        "topmostSubform[0].Page1[0].f1_56[0]",
+        fields.line15OverpaymentInt,
+        fields.line15OverpaymentDec,
       )
-      form.getCheckBox("topmostSubform[0].Page1[0].c1_3[1]").check()
+      form.getCheckBox(fields.line15RefundCheckbox).check()
     }
 
     // ===== Page 2 =====
-    form
-      .getTextField("topmostSubform[0].Page2[0].Name_ReadOrder[0].f1_3[0]")
-      .setText(companyName)
-
-    const einFieldsPage2 = [
-      "topmostSubform[0].Page2[0].EIN_Number[0].f1_1[0]",
-      "topmostSubform[0].Page2[0].EIN_Number[0].f1_2[0]",
-    ]
-
-    const EINparts = [ein.slice(0, 2), ein.slice(2)]
-    EINparts.forEach((val, i) => {
-      form.getTextField(einFieldsPage2[i]).setText(val)
-    })
+    form.getTextField(fields.page2CompanyName).setText(companyName)
+    form.getTextField(fields.page2EinPart1).setText(einParts[0])
+    form.getTextField(fields.page2EinPart2).setText(einParts[1])
 
     // ===== Line 16: Monthly Summary of Federal Tax Liability =====
 
@@ -329,82 +277,72 @@ export async function GET(req: NextRequest) {
 
     // Option 1: Small liability (de minimis)
     if (isSmallLiability) {
-      form.getCheckBox("topmostSubform[0].Page2[0].c2_1[0]").check()
+      form.getCheckBox(fields.line16SmallLiabilityCheckbox).check()
     }
 
     // Option 2: Monthly depositor
     if (isMonthlyDepositor && form941.monthlyTaxLiability) {
-      form.getCheckBox("topmostSubform[0].Page2[0].c2_1[1]").check()
+      form.getCheckBox(fields.line16MonthlyCheckbox).check()
 
       // Fill monthly tax liability breakdown
       fillCurrencyField(
         form,
         form941.monthlyTaxLiability.month1,
-        "topmostSubform[0].Page2[0].f2_1[0]",
-        "topmostSubform[0].Page2[0].f2_2[0]",
+        fields.line16Month1Int,
+        fields.line16Month1Dec,
       )
       fillCurrencyField(
         form,
         form941.monthlyTaxLiability.month2,
-        "topmostSubform[0].Page2[0].f2_3[0]",
-        "topmostSubform[0].Page2[0].f2_4[0]",
+        fields.line16Month2Int,
+        fields.line16Month2Dec,
       )
       fillCurrencyField(
         form,
         form941.monthlyTaxLiability.month3,
-        "topmostSubform[0].Page2[0].f2_5[0]",
-        "topmostSubform[0].Page2[0].f2_6[0]",
+        fields.line16Month3Int,
+        fields.line16Month3Dec,
       )
       fillCurrencyField(
         form,
         form941.monthlyTaxLiability.total,
-        "topmostSubform[0].Page2[0].f2_7[0]",
-        "topmostSubform[0].Page2[0].f2_8[0]",
+        fields.line16TotalInt,
+        fields.line16TotalDec,
       )
     }
 
     // Option 3: Semiweekly depositor
     if (isSemiweeklyDepositor) {
-      form.getCheckBox("topmostSubform[0].Page2[0].c2_1[2]").check()
+      form.getCheckBox(fields.line16SemiweeklyCheckbox).check()
     }
 
     /** Part 4 */
-    form.getCheckBox("topmostSubform[0].Page2[0].c2_4[1]").check()
+    form.getCheckBox(fields.part4ThirdPartyNoCheckbox).check()
 
     // ===== Page 3 (Payment Voucher) =====
-    const einFieldsPage3 = [
-      "topmostSubform[0].Page3[0].EIN_Number[0].f1_1[0]",
-      "topmostSubform[0].Page3[0].EIN_Number[0].f1_2[0]",
-    ]
-
-    const EINparts3 = [ein.slice(0, 2), ein.slice(2)]
-    EINparts3.forEach((val, i) => {
-      form.getTextField(einFieldsPage3[i]).setText(val)
-    })
+    form.getTextField(fields.voucherEinPart1).setText(einParts[0])
+    form.getTextField(fields.voucherEinPart2).setText(einParts[1])
 
     // Quarter checkbox on payment voucher
-    const quarterCheckBoxOn941V = form.getCheckBox(
-      `topmostSubform[0].Page3[0].Line3_ReadOrder[0].c3_1[${
-        parseInt(quarterNumber, 10) - 1
-      }]`,
-    )
-    quarterCheckBoxOn941V.check()
+    form
+      .getCheckBox(`${fields.voucherQuarterCheckboxPrefix}[${quarterIndex}]`)
+      .check()
 
     // Payment amount (balance due)
     if (balanceDue > 0) {
       fillCurrencyField(
         form,
         balanceDue,
-        "topmostSubform[0].Page3[0].f3_1[0]",
-        "topmostSubform[0].Page3[0].f3_2[0]",
+        fields.voucherAmountInt,
+        fields.voucherAmountDec,
       )
     }
 
     // Company name and address on payment voucher
-    form.getTextField("topmostSubform[0].Page3[0].f1_3[0]").setText(companyName)
-    form.getTextField("topmostSubform[0].Page3[0].f3_3[0]").setText(address)
+    form.getTextField(fields.voucherCompanyName).setText(companyName)
+    form.getTextField(fields.voucherAddress).setText(address)
     form
-      .getTextField("topmostSubform[0].Page3[0].f3_4[0]")
+      .getTextField(fields.voucherCityStateZip)
       .setText(`${city}, ${state} ${zip}`)
 
     const pdfBytes = await pdfDoc.save()
