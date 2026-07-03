@@ -33,7 +33,7 @@
  *   w4/2025.pdf        (Form W-4)
  */
 
-export type PdfFormYear = 2025
+export type PdfFormYear = 2025 | 2026
 
 export type PdfFormType = "940" | "941" | "W4"
 
