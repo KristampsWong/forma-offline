@@ -1,0 +1,74 @@
+# Forma offline — self-contained stack (web + mongo + redis)
+# Fixed project name so named volumes/networks survive redeploys regardless of
+# which directory `docker compose` is invoked from (manual run vs CI runner).
+name: forma
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: forma-web:latest
+    container_name: forma-web
+    restart: unless-stopped
+    # Secrets come from the existing .env; the three lines below override the
+    # host/URL values in .env so the app talks to the in-network services.
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: mongodb://mongo:27017/forma-offline
+      REDIS_URL: redis://redis:6379
+      BETTER_AUTH_URL: http://localhost:9000
+    ports:
+      - "9000:3000"
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - forma-net
+
+  mongo:
+    image: mongo:8
+    container_name: forma-mongo
+    restart: unless-stopped
+    command: ["--bind_ip_all"]
+    volumes:
+      - mongo-data:/data/db
+    # Bound to localhost only (no auth on this instance) so it's reachable for
+    # `mongorestore` from the host but not exposed to the LAN. Not 55003.
+    ports:
+      - "127.0.0.1:55004:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - forma-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: forma-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - forma-net
+
+volumes:
+  mongo-data:
+  redis-data:
+
+networks:
+  forma-net:
+    driver: bridge
